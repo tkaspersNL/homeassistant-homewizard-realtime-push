@@ -1,0 +1,133 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "HomeWizard Realtime Push instellen",
+        "description": "Vul het IP-adres van je HomeWizard P1-meter in. Die heeft firmware 6 of nieuwer nodig (API v2).",
+        "data": {
+          "ip_address": "IP-adres"
+        },
+        "data_description": {
+          "ip_address": "Het IP-adres van de P1-meter, zoals de HomeWizard-app of je router het toont."
+        }
+      },
+      "discovery_confirm": {
+        "title": "HomeWizard P1-meter gevonden",
+        "description": "{name} op {host} instellen voor realtime updates? Dit draait naast de officiële HomeWizard-integratie en vervangt die niet."
+      },
+      "authorize": {
+        "title": "Druk op de knop van je P1-meter",
+        "description": "Druk één keer op de knop van de P1-meter en kies daarna Verzenden. Home Assistant wacht maximaal {wait}s op de druk en haalt dan een eigen toegangstoken op bij de meter."
+      },
+      "reauth_confirm": {
+        "title": "Nieuw toegangstoken nodig",
+        "description": "De P1-meter accepteert het opgeslagen token niet meer, bijvoorbeeld omdat het in de HomeWizard-app is verwijderd. Kies Verzenden om een nieuw token aan te vragen; je moet dan op de knop van de meter drukken."
+      },
+      "reconfigure": {
+        "title": "IP-adres wijzigen",
+        "description": "Vul het nieuwe IP-adres van dezelfde P1-meter in. Het opgeslagen token blijft in gebruik.",
+        "data": {
+          "ip_address": "IP-adres"
+        },
+        "data_description": {
+          "ip_address": "Het nieuwe IP-adres van de P1-meter."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Geen HomeWizard-apparaat met API v2 bereikbaar op dit adres. Controleer het IP-adres en of het apparaat online is.",
+      "button_not_pressed": "Er is niet op tijd een knopdruk gezien. Druk op de knop van de P1-meter en kies opnieuw Verzenden.",
+      "token_rejected": "Het apparaat op dit adres accepteert het opgeslagen token niet. Is het dezelfde P1-meter?"
+    },
+    "abort": {
+      "already_configured": "Apparaat is al geconfigureerd",
+      "cannot_connect": "Kan geen verbinding maken",
+      "firmware_too_old": "Dit apparaat ondersteunt alleen de oude v1-API. Werk de P1-meter bij naar firmware 6 of nieuwer, of gebruik de officiële HomeWizard-integratie.",
+      "invalid_discovery_parameters": "Het gevonden apparaat gaf geen producttype en serienummer door.",
+      "not_p1_meter": "Deze integratie ondersteunt alleen de HomeWizard P1-meter. Gebruik voor andere apparaten de officiële HomeWizard-integratie.",
+      "reauth_successful": "Herauthenticatie geslaagd",
+      "reconfigure_successful": "Herconfiguratie geslaagd",
+      "wrong_device": "Dit is een andere P1-meter dan die eerder is ingesteld."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Updatesnelheid",
+        "description": "Hoe vaak de entiteiten bijwerken. Sneller betekent meer statuswijzigingen: meer CPU, meer triggers voor automatiseringen en templates, en een snellere groei van de database. De integratie gaat vanzelf langzamer als Home Assistant het druk heeft. Wijzigingen gelden na een herlaadactie, die automatisch gebeurt.",
+        "data": {
+          "update_speed": "Updatesnelheid"
+        },
+        "data_description": {
+          "update_speed": "Zeer snel (2s) past bij de meeste toepassingen. Zie de README voor schattingen van de opslag."
+        }
+      }
+    }
+  },
+  "selector": {
+    "update_speed": {
+      "options": {
+        "realtime": "Realtime: elk telegram (ongeveer 1s bij DSMR 5)",
+        "very_fast": "Zeer snel: elke 2s",
+        "fast": "Snel: elke 3s",
+        "normal": "Normaal: elke 5s"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "power": {
+        "name": "Vermogen"
+      },
+      "power_phase": {
+        "name": "Vermogen fase {phase}"
+      },
+      "voltage_phase": {
+        "name": "Spanning fase {phase}"
+      },
+      "current_phase": {
+        "name": "Stroom fase {phase}"
+      },
+      "effective_interval": {
+        "name": "Effectief update-interval",
+        "state_attributes": {
+          "configured_interval": {
+            "name": "Ingesteld interval"
+          },
+          "reason": {
+            "name": "Reden",
+            "state": {
+              "configured": "Ingestelde snelheid",
+              "loop_lag": "Home Assistant heeft het druk",
+              "late_frames": "Metingen komen te laat binnen",
+              "reconnect": "Verbinding weggevallen"
+            }
+          },
+          "transport": {
+            "name": "Transport",
+            "state": {
+              "connecting": "Verbinden",
+              "websocket": "WebSocket-push",
+              "polling": "HTTPS-polling (terugvaloptie)"
+            }
+          },
+          "loop_lag_ms": {
+            "name": "Vertraging event-loop"
+          },
+          "frame_interval_s": {
+            "name": "Telegram-interval"
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "De P1-meter op {host} is niet bereikbaar."
+    },
+    "token_rejected": {
+      "message": "De P1-meter heeft het toegangstoken geweigerd."
+    }
+  }
+}

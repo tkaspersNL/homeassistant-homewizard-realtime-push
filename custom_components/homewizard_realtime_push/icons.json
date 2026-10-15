@@ -1,0 +1,9 @@
+{
+  "entity": {
+    "sensor": {
+      "effective_interval": {
+        "default": "mdi:timer-sync-outline"
+      }
+    }
+  }
+}

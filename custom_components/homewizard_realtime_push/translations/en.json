@@ -1,0 +1,133 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Set up HomeWizard Realtime Push",
+        "description": "Enter the IP address of your HomeWizard P1 meter. It needs firmware 6 or newer (API v2).",
+        "data": {
+          "ip_address": "IP address"
+        },
+        "data_description": {
+          "ip_address": "The IP address of the P1 meter, as shown in the HomeWizard app or your router."
+        }
+      },
+      "discovery_confirm": {
+        "title": "HomeWizard P1 meter found",
+        "description": "Set up {name} at {host} for realtime updates? This runs next to the official HomeWizard integration and does not replace it."
+      },
+      "authorize": {
+        "title": "Press the button on your P1 meter",
+        "description": "Press the button on the P1 meter once, then select Submit. Home Assistant waits up to {wait}s for the press and then gets its own access token from the meter."
+      },
+      "reauth_confirm": {
+        "title": "New access token needed",
+        "description": "The P1 meter no longer accepts the stored token, for example because it was removed in the HomeWizard app. Select Submit to request a new one; you will need to press the button on the meter."
+      },
+      "reconfigure": {
+        "title": "Change the IP address",
+        "description": "Enter the new IP address of the same P1 meter. The stored token is reused.",
+        "data": {
+          "ip_address": "IP address"
+        },
+        "data_description": {
+          "ip_address": "The new IP address of the P1 meter."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Can't reach a HomeWizard device with API v2 at this address. Check the IP address and that the device is online.",
+      "button_not_pressed": "No button press was detected in time. Press the button on the P1 meter and select Submit again.",
+      "token_rejected": "The device at this address does not accept the stored token. Is it the same P1 meter?"
+    },
+    "abort": {
+      "already_configured": "Device is already configured",
+      "cannot_connect": "Failed to connect",
+      "firmware_too_old": "This device only supports the old v1 API. Update the P1 meter to firmware 6 or newer, or use the official HomeWizard integration.",
+      "invalid_discovery_parameters": "The discovered device did not report a product type and serial number.",
+      "not_p1_meter": "This integration supports the HomeWizard P1 meter only. Use the official HomeWizard integration for other devices.",
+      "reauth_successful": "Re-authentication was successful",
+      "reconfigure_successful": "Re-configuration was successful",
+      "wrong_device": "This is a different P1 meter than the one that was set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update speed",
+        "description": "How often the entities update. Faster means more state changes: more CPU, more automation and template triggers, and more database growth. The integration slows down on its own when Home Assistant is busy. Changes apply after a reload, which happens automatically.",
+        "data": {
+          "update_speed": "Update speed"
+        },
+        "data_description": {
+          "update_speed": "Very fast (2s) suits most uses. See the README for storage estimates."
+        }
+      }
+    }
+  },
+  "selector": {
+    "update_speed": {
+      "options": {
+        "realtime": "Realtime: every telegram (about 1s on DSMR 5)",
+        "very_fast": "Very fast: every 2s",
+        "fast": "Fast: every 3s",
+        "normal": "Normal: every 5s"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "power": {
+        "name": "Power"
+      },
+      "power_phase": {
+        "name": "Power phase {phase}"
+      },
+      "voltage_phase": {
+        "name": "Voltage phase {phase}"
+      },
+      "current_phase": {
+        "name": "Current phase {phase}"
+      },
+      "effective_interval": {
+        "name": "Effective update interval",
+        "state_attributes": {
+          "configured_interval": {
+            "name": "Configured interval"
+          },
+          "reason": {
+            "name": "Reason",
+            "state": {
+              "configured": "Configured speed",
+              "loop_lag": "Home Assistant is busy",
+              "late_frames": "Measurements arrive late",
+              "reconnect": "Connection dropped"
+            }
+          },
+          "transport": {
+            "name": "Transport",
+            "state": {
+              "connecting": "Connecting",
+              "websocket": "WebSocket push",
+              "polling": "HTTPS polling (fallback)"
+            }
+          },
+          "loop_lag_ms": {
+            "name": "Event loop lag"
+          },
+          "frame_interval_s": {
+            "name": "Telegram interval"
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Can't reach the P1 meter at {host}."
+    },
+    "token_rejected": {
+      "message": "The P1 meter rejected the access token."
+    }
+  }
+}
