@@ -1,5 +1,10 @@
 # HomeWizard Realtime Push
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/dark_icon.svg">
+  <img src="assets/brand/icon.svg" alt="" width="96" align="right">
+</picture>
+
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
 [![Release](https://img.shields.io/github/v/release/tkaspersnl/homeassistant-homewizard-realtime-push?include_prereleases)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/releases)
 [![Validate](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml/badge.svg)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml)
