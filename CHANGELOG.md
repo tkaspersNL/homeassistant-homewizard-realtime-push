@@ -23,3 +23,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README section on safety, with an example automation that pauses a battery controller when the data stops.
 - Redacted diagnostics.
 - English and Dutch translations.
+- Integration icon, with a separate version for dark mode (Home Assistant 2026.3 and later load it from the integration folder).
