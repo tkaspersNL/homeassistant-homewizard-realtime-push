@@ -22,6 +22,8 @@ async def test_diagnostics_are_redacted(
     assert result["device"]["serial"] == REDACTED
     assert result["device"]["product_type"] == "HWE-P1"
     assert result["throttle"]["effective_interval_s"] == 2.0
+    assert "loop_lag_s" in result["throttle"]
+    assert "frame_interval_s" in result["throttle"]
     assert result["hub"]["available"] is True
     assert result["measurement"]["power_w"] == -543
 

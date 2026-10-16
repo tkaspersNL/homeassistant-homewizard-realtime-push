@@ -40,6 +40,9 @@ async def test_default_entities(
     assert interval.attributes["configured_interval"] == 2.0
     assert interval.attributes["reason"] == "configured"
     assert interval.attributes["transport"] == "connecting"
+    # Fast-moving throttle values live in diagnostics, not on this entity.
+    assert "loop_lag_ms" not in interval.attributes
+    assert "frame_interval_s" not in interval.attributes
 
     entity_registry = er.async_get(hass)
     for entity_id in PHASE_ENTITIES:

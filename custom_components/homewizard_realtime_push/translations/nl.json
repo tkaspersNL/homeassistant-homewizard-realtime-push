@@ -111,12 +111,6 @@
               "websocket": "WebSocket-push",
               "polling": "HTTPS-polling (terugvaloptie)"
             }
-          },
-          "loop_lag_ms": {
-            "name": "Vertraging event-loop"
-          },
-          "frame_interval_s": {
-            "name": "Telegram-interval"
           }
         }
       }

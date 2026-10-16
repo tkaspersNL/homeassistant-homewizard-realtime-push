@@ -156,8 +156,6 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. Adj
   - `configured_interval`: the option you chose, in seconds
   - `reason`: `configured`, `loop_lag`, `late_frames` or `reconnect`
   - `transport`: `websocket`, `polling` (fallback) or `connecting`
-  - `loop_lag_ms`: median timer lag over the last 10s
-  - `frame_interval_s`: the usual time between telegrams
 
 There are no energy totals, tariffs or gas entities on purpose: the official integration covers those, and they don't need fast updates.
 
@@ -176,7 +174,7 @@ There are no energy totals, tariffs or gas entities on purpose: the official int
 - **Setup says no button press was detected.** Press the button once, then select Submit within 30s.
 - **Setup says the firmware is too old.** The meter only speaks API v1. Update it through the HomeWizard app, or keep using the official integration.
 
-**Diagnostics:** *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Download diagnostics*. The token, serial number and IP address are redacted.
+**Diagnostics:** *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Download diagnostics*. Besides the settings and the latest measurement, it shows the live event loop lag and the time between telegrams. The token, serial number and IP address are redacted.
 
 **Debug logs:**
 

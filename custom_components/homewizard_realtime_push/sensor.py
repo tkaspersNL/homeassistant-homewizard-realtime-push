@@ -160,12 +160,11 @@ class EffectiveIntervalSensor(RealtimeEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return why the interval is what it is."""
+        # Written only on status changes, so faster-moving values (lag, telegram
+        # interval) would go stale here; they are in the diagnostics instead.
         throttle = self.hub.throttle
-        lag = throttle.loop_lag
         return {
             "configured_interval": throttle.floor,
             "reason": throttle.reason.value,
             "transport": self.hub.transport.value,
-            "loop_lag_ms": None if lag is None else round(lag * 1000),
-            "frame_interval_s": throttle.frame_period,
         }
