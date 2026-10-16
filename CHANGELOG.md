@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Power from a HomeWizard P1 meter, pushed over the local API v2 WebSocket.
 - Per-phase power, voltage and current entities, disabled by default and only created for phases the meter reports.
-- Update speed option: Realtime (every telegram), Very fast (2s, default), Fast (3s) or Normal (5s). Entities always show the latest reading, never an average.
+- Update speed option: Realtime (every reading, ~1s on DSMR 5), Very fast (2s, default and recommended), Fast (3s) or Normal (5s). Entities always show the latest reading, never an average.
 - Automatic backoff to a slower interval when Home Assistant lags, telegrams arrive late or the connection drops, and a step back after 60s without problems.
 - Diagnostic entity *Effective update interval*, with the reason and transport as attributes.
 - Reconnect with exponential backoff and HTTPS polling as a fallback while the WebSocket is down.

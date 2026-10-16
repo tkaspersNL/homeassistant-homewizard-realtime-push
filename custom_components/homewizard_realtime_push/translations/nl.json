@@ -60,7 +60,7 @@
           "update_speed": "Updatesnelheid"
         },
         "data_description": {
-          "update_speed": "Zeer snel (2s) past bij de meeste toepassingen. Zie de README voor schattingen van de opslag."
+          "update_speed": "Realtime volgt je meter: ongeveer 1s bij een DSMR 5-meter, 10s bij oudere meters. Zie de README voor schattingen van de opslag."
         }
       }
     }
@@ -68,10 +68,10 @@
   "selector": {
     "update_speed": {
       "options": {
-        "realtime": "Realtime: elk telegram (ongeveer 1s bij DSMR 5)",
-        "very_fast": "Zeer snel: elke 2s",
-        "fast": "Snel: elke 3s",
-        "normal": "Normaal: elke 5s"
+        "realtime": "Realtime: elke meting (~1s bij DSMR 5)",
+        "very_fast": "Zeer snel: 2s (aanbevolen)",
+        "fast": "Snel: 3s",
+        "normal": "Normaal: 5s (zoals de officiële integratie)"
       }
     }
   },

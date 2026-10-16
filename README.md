@@ -87,8 +87,8 @@ Change this under *Settings → Devices & services → HomeWizard Realtime Push 
 
 | Option | Interval | Notes |
 |---|---|---|
-| Realtime | every telegram (about 1s on DSMR 5) | fastest, highest load |
-| Very fast | 2s | **default** |
+| Realtime | every reading (~1s on DSMR 5) | fastest, highest load |
+| Very fast | 2s | **default**, recommended |
 | Fast | 3s | |
 | Normal | 5s | same rate as the official integration, but pushed |
 
