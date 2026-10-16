@@ -6,6 +6,7 @@ from collections.abc import Callable, Generator
 from unittest.mock import MagicMock, patch
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 from homewizard_energy.models import Device
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -13,6 +14,10 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.homewizard_realtime_push.client import Transport
 from custom_components.homewizard_realtime_push.const import (
     CONF_UPDATE_SPEED,
+    DOMAIN,
+    ISSUE_AFTER,
+    Issue,
+    Problem,
     UpdateSpeed,
 )
 from custom_components.homewizard_realtime_push.coordinator import RealtimeHub
@@ -209,3 +214,91 @@ async def test_listener_removal(make_hub, clock) -> None:
     remove()
     hub.on_measurement(make_measurement())
     assert calls[0] == 0
+
+
+def issue(hass: HomeAssistant, hub: RealtimeHub, kind: Issue) -> ir.IssueEntry | None:
+    return ir.async_get(hass).async_get_issue(DOMAIN, f"{kind}_{hub.entry.entry_id}")
+
+
+async def test_no_data_issue_after_five_minutes(
+    hass: HomeAssistant, make_hub, clock, caplog: pytest.LogCaptureFixture
+) -> None:
+    hub = make_hub()
+    tick(hub, clock, 12)
+    assert hub.problem is Problem.NO_DATA
+    assert "WARNING" in [
+        r.levelname for r in caplog.records if "unavailable" in r.message
+    ]
+    assert issue(hass, hub, Issue.NO_DATA) is None
+
+    tick(hub, clock, ISSUE_AFTER[Issue.NO_DATA] - 1)
+    assert issue(hass, hub, Issue.NO_DATA) is None
+    tick(hub, clock, 1)
+    raised = issue(hass, hub, Issue.NO_DATA)
+    assert raised is not None
+    assert raised.severity is ir.IssueSeverity.WARNING
+    assert raised.translation_placeholders == {"name": "P1 meter", "minutes": "5"}
+    assert hub.issues == ["no_data"]
+
+    hub.on_measurement(make_measurement())
+    assert hub.problem is None
+    assert issue(hass, hub, Issue.NO_DATA) is None
+    assert "are back after 312s" in caplog.text
+
+
+async def test_no_data_issue_skipped_when_token_rejected(
+    hass: HomeAssistant, make_hub, clock, mock_config_entry: MockConfigEntry
+) -> None:
+    hub = make_hub()
+    with patch.object(mock_config_entry, "async_start_reauth"):
+        hub.on_auth_failed()
+    assert hub.problem is Problem.TOKEN_REJECTED
+    tick(hub, clock, ISSUE_AFTER[Issue.NO_DATA] + 60)
+    assert issue(hass, hub, Issue.NO_DATA) is None
+
+
+async def test_polling_issue_after_fifteen_minutes(
+    hass: HomeAssistant, make_hub, clock, caplog: pytest.LogCaptureFixture
+) -> None:
+    hub = make_hub()
+    hub.on_transport(Transport.WEBSOCKET)
+    hub.on_transport(Transport.POLLING)
+    assert "dropped; polling" in caplog.text
+    # Polling still delivers data, so this is not a problem for automations.
+    for _ in range(int(ISSUE_AFTER[Issue.POLLING_FALLBACK] / 5)):
+        clock.now += 5
+        hub.on_measurement(make_measurement())
+        hub._tick(clock.now)
+    assert hub.problem is None
+    assert issue(hass, hub, Issue.POLLING_FALLBACK) is not None
+
+    hub.on_transport(Transport.WEBSOCKET)
+    assert "streaming again" in caplog.text
+    assert issue(hass, hub, Issue.POLLING_FALLBACK) is None
+
+
+async def test_throttled_issue_after_thirty_minutes(
+    hass: HomeAssistant, make_hub, clock
+) -> None:
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    hub.throttle._level += 1
+    with patch.object(hub.throttle, "evaluate", return_value=False):
+        for _ in range(int(ISSUE_AFTER[Issue.THROTTLED] / 3) + 1):
+            clock.now += 3
+            hub.on_measurement(make_measurement())
+            hub._tick(clock.now)
+    assert issue(hass, hub, Issue.THROTTLED) is not None
+
+    hub.throttle._level -= 1
+    tick(hub, clock, 0)
+    assert issue(hass, hub, Issue.THROTTLED) is None
+
+
+async def test_stop_clears_issues(hass: HomeAssistant, make_hub, clock) -> None:
+    hub = make_hub()
+    tick(hub, clock, 12)
+    tick(hub, clock, ISSUE_AFTER[Issue.NO_DATA])
+    assert issue(hass, hub, Issue.NO_DATA) is not None
+    hub.async_stop()
+    assert issue(hass, hub, Issue.NO_DATA) is None
+    assert hub.issues == []

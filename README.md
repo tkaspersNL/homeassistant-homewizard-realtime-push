@@ -149,6 +149,7 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. Adj
 | Voltage phase 1/2/3 | V | no |
 | Current phase 1/2/3 | A | no |
 | Effective update interval (diagnostic) | s | yes |
+| Problem (diagnostic) | on/off | yes |
 
 - **Power** uses the same sign as the official integration: positive when you import from the grid, negative when you export.
 - Phase entities are only created for phases the meter reports. A single-phase connection gets phase 1 only.
@@ -156,8 +157,73 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. Adj
   - `configured_interval`: the option you chose, in seconds
   - `reason`: `configured`, `loop_lag`, `late_frames` or `reconnect`
   - `transport`: `websocket`, `polling` (fallback) or `connecting`
+- **Problem** is *on* when there is no fresh data, and *off* otherwise. Its `reason` attribute says why: `no_data` (nothing arrived for 10s or more) or `token_rejected` (the meter no longer accepts the token). It stays available itself, so automations can rely on it. See [Safety](#safety-when-the-data-stops).
 
 There are no energy totals, tariffs or gas entities on purpose: the official integration covers those, and they don't need fast updates.
+
+## Safety: when the data stops
+
+If something controls a battery or a load from these entities, decide what it should do when the data stops. Otherwise it keeps acting on the last value it saw.
+
+The integration helps in three ways:
+
+- **Unavailable entities.** When no value arrives for 10s or more, the fast entities become *unavailable*. They never keep showing an old value.
+- **The Problem sensor** turns *on* at the same moment and *off* when fresh data returns. Use it to pause control and to alert yourself.
+- **Repairs.** If a problem lasts, a message appears under *Settings → System → Repairs*. It disappears by itself when the problem is over.
+
+  | Message | Appears after | Meaning |
+  |---|---|---|
+  | No measurements | 5 minutes | Nothing arrives from the meter. |
+  | Not pushing measurements | 15 minutes | The WebSocket doesn't work; values come in by HTTPS polling instead. |
+  | Updates slower than configured | 30 minutes | The integration has slowed down for a long time (see [Automatic backoff / throttling](#automatic-backoff--throttling)). |
+
+  When the meter rejects the token, Home Assistant asks you to authenticate again instead.
+
+Integrations can't send phone notifications themselves. Use an automation for that. This example pauses a battery controller and notifies you when the data stops for 30s, and resumes when it is back. Replace the entity and notify names with your own:
+
+```yaml
+alias: Pause battery control when grid data stops
+mode: restart
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.p1_meter_realtime_problem
+    to: "on"
+    for: "00:00:30"
+    id: stopped
+  - trigger: state
+    entity_id: binary_sensor.p1_meter_realtime_problem
+    from: "on"
+    to: "off"
+    id: back
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: stopped
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.home_battery_control
+          - action: notify.mobile_app_your_phone
+            data:
+              title: Battery control paused
+              message: >-
+                No grid data from the P1 meter
+                ({{ state_attr('binary_sensor.p1_meter_realtime_problem', 'reason') }}).
+      - conditions:
+          - condition: trigger
+            id: back
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.home_battery_control
+          - action: notify.mobile_app_your_phone
+            data:
+              title: Battery control resumed
+              message: Grid data from the P1 meter is back.
+```
+
+Polling and slowing down don't turn the Problem sensor on: the data is still fresh then, and pausing for that would do more harm than good.
 
 ## How data reaches Home Assistant
 
@@ -168,7 +234,8 @@ There are no energy totals, tariffs or gas entities on purpose: the official int
 
 ## Troubleshooting and diagnostics
 
-- **Entities are unavailable.** The meter sent nothing for a while. Check that it is online in the HomeWizard app. The integration reconnects by itself; the log shows a line when values stop and when they are back.
+- **Entities are unavailable / Problem is on.** The meter sent nothing for a while. Check that it is online in the HomeWizard app. The integration reconnects by itself. The log has a warning when values stop and an info line when they are back.
+- **A message under Repairs.** See [Safety](#safety-when-the-data-stops) for what each one means. They clear themselves when the problem is over.
 - **`transport` stays on `polling`.** The WebSocket could not be used and the integration fell back to HTTPS polling. Values still arrive, but less efficiently. Please open an issue with diagnostics and debug logs.
 - **`reason` is `loop_lag`.** Home Assistant was too busy to keep up. Look for heavy automations or integrations, or choose a slower option.
 - **Setup says no button press was detected.** Press the button once, then select Submit within 30s.

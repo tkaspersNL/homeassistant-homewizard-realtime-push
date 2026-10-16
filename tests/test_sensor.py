@@ -125,7 +125,7 @@ async def test_updates_and_availability(
     hub._publish(make_measurement(power_w=1234))
     assert hass.states.get(POWER).state == "1234.0"
 
-    hub._set_unavailable()
+    hub._set_unavailable(hub._clock())
     assert hass.states.get(POWER).state == STATE_UNAVAILABLE
     # The diagnostic entity keeps reporting.
     assert hass.states.get(INTERVAL).state == "2.0"

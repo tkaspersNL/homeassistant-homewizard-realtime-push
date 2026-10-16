@@ -39,6 +39,8 @@ async def async_get_config_entry_diagnostics(
                 "available": hub.available,
                 "transport": hub.transport.value,
                 "stale_after_s": hub.stale_after,
+                "problem": hub.problem,
+                "issues": hub.issues,
             },
             "throttle": {
                 "configured_interval_s": throttle.floor,

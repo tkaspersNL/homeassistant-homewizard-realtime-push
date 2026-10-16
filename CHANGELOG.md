@@ -17,5 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reconnect with exponential backoff and HTTPS polling as a fallback while the WebSocket is down.
 - Entities go unavailable when no data arrives for 10s or 3 intervals, whichever is longer.
 - Setup through discovery or IP address, with a button press on the meter; reauthentication and reconfiguration flows.
+- Diagnostic *Problem* binary sensor that turns on when there is no fresh data (no measurements or a rejected token), so automations can pause control and send alerts.
+- Repair issues that clear themselves: no measurements for 5 minutes, WebSocket not working for 15 minutes, or slower than the configured speed for 30 minutes.
+- Warnings in the log when measurements stop and when a repair issue is raised; info lines when they are back, on WebSocket drops and on every throttle step.
+- README section on safety, with an example automation that pauses a battery controller when the data stops.
 - Redacted diagnostics.
 - English and Dutch translations.

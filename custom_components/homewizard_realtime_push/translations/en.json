@@ -76,6 +76,20 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem",
+        "state_attributes": {
+          "reason": {
+            "name": "Reason",
+            "state": {
+              "no_data": "No measurements",
+              "token_rejected": "Token rejected"
+            }
+          }
+        }
+      }
+    },
     "sensor": {
       "power": {
         "name": "Power"
@@ -122,6 +136,20 @@
     },
     "token_rejected": {
       "message": "The P1 meter rejected the access token."
+    }
+  },
+  "issues": {
+    "no_data": {
+      "title": "No measurements from {name}",
+      "description": "The P1 meter has sent no measurements for at least {minutes} minutes, and its realtime entities are unavailable. Anything that controls a home battery or load from these entities is working without grid data.\n\nCheck that the meter is powered and online in the HomeWizard app, and that Home Assistant can reach it on the network. This message disappears by itself when measurements return."
+    },
+    "polling_fallback": {
+      "title": "{name} is not pushing measurements",
+      "description": "For at least {minutes} minutes the WebSocket to the P1 meter has not worked, so the integration polls the meter over HTTPS instead. Values still arrive, but less efficiently.\n\nRestarting the meter usually helps. If it keeps happening, open an issue on GitHub with the diagnostics and debug logs. This message disappears by itself when the WebSocket works again."
+    },
+    "throttled": {
+      "title": "{name} updates slower than configured",
+      "description": "For at least {minutes} minutes the integration has updated slower than the update speed you chose, because Home Assistant is busy, measurements arrive late, or the connection keeps dropping. The *Effective update interval* entity shows the reason.\n\nLook for heavy automations or integrations, or choose a slower update speed. This message disappears by itself when the configured speed is reached again."
     }
   }
 }

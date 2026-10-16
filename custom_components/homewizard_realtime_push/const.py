@@ -11,7 +11,7 @@ from homeassistant.const import Platform
 DOMAIN: Final = "homewizard_realtime_push"
 LOGGER = logging.getLogger(__package__)
 
-PLATFORMS: Final = [Platform.SENSOR]
+PLATFORMS: Final = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 CONF_PRODUCT_NAME: Final = "product_name"
 CONF_PRODUCT_TYPE: Final = "product_type"
@@ -27,6 +27,29 @@ TOKEN_RETRY_INTERVAL: Final = 1.0
 # Entities go unavailable after this long without a frame, or 3 intervals.
 STALE_MIN: Final = 10.0
 STALE_FACTOR: Final = 3
+
+
+class Problem(StrEnum):
+    """Why there is no fresh data."""
+
+    NO_DATA = "no_data"
+    TOKEN_REJECTED = "token_rejected"  # noqa: S105
+
+
+class Issue(StrEnum):
+    """Repair issues raised when a problem lasts."""
+
+    NO_DATA = "no_data"
+    POLLING_FALLBACK = "polling_fallback"
+    THROTTLED = "throttled"
+
+
+# Short hiccups are only logged; these durations (s) raise a repair issue.
+ISSUE_AFTER: Final[dict[Issue, float]] = {
+    Issue.NO_DATA: 5 * 60,
+    Issue.POLLING_FALLBACK: 15 * 60,
+    Issue.THROTTLED: 30 * 60,
+}
 
 
 class UpdateSpeed(StrEnum):

@@ -1,5 +1,13 @@
 {
   "entity": {
+    "binary_sensor": {
+      "problem": {
+        "default": "mdi:check-circle-outline",
+        "state": {
+          "on": "mdi:alert-circle-outline"
+        }
+      }
+    },
     "sensor": {
       "effective_interval": {
         "default": "mdi:timer-sync-outline"

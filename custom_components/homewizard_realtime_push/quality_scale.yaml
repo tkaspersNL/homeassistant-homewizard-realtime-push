@@ -61,9 +61,7 @@ rules:
   dynamic-devices:
     status: exempt
     comment: One config entry is one meter.
-  repair-issues:
-    status: exempt
-    comment: A rejected token starts reauthentication; there is nothing else to repair.
+  repair-issues: done
   stale-devices:
     status: exempt
     comment: One config entry is one meter.

@@ -76,6 +76,20 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "problem": {
+        "name": "Probleem",
+        "state_attributes": {
+          "reason": {
+            "name": "Reden",
+            "state": {
+              "no_data": "Geen metingen",
+              "token_rejected": "Token geweigerd"
+            }
+          }
+        }
+      }
+    },
     "sensor": {
       "power": {
         "name": "Vermogen"
@@ -122,6 +136,20 @@
     },
     "token_rejected": {
       "message": "De P1-meter heeft het toegangstoken geweigerd."
+    }
+  },
+  "issues": {
+    "no_data": {
+      "title": "Geen metingen van {name}",
+      "description": "De P1-meter heeft al minstens {minutes} minuten geen metingen gestuurd en de realtime entiteiten zijn niet beschikbaar. Alles wat een thuisbatterij of verbruik regelt op basis van deze entiteiten, werkt nu zonder netgegevens.\n\nControleer of de meter stroom heeft en online is in de HomeWizard-app, en of Home Assistant hem via het netwerk kan bereiken. Deze melding verdwijnt vanzelf zodra er weer metingen binnenkomen."
+    },
+    "polling_fallback": {
+      "title": "{name} pusht geen metingen",
+      "description": "Al minstens {minutes} minuten werkt de WebSocket naar de P1-meter niet, dus vraagt de integratie de meter via HTTPS uit. Er komen nog steeds waarden binnen, maar minder efficiënt.\n\nDe meter herstarten helpt meestal. Blijft het gebeuren, open dan een issue op GitHub met de diagnostische gegevens en debuglogs. Deze melding verdwijnt vanzelf zodra de WebSocket weer werkt."
+    },
+    "throttled": {
+      "title": "{name} werkt langzamer bij dan ingesteld",
+      "description": "Al minstens {minutes} minuten werkt de integratie langzamer bij dan de gekozen updatesnelheid, omdat Home Assistant het druk heeft, metingen te laat binnenkomen of de verbinding steeds wegvalt. De entiteit *Effectief update-interval* toont de reden.\n\nZoek naar zware automatiseringen of integraties, of kies een lagere updatesnelheid. Deze melding verdwijnt vanzelf zodra de ingestelde snelheid weer gehaald wordt."
     }
   }
 }
