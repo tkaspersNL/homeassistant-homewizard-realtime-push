@@ -17,7 +17,7 @@ It is built for things that need to react quickly to the grid connection, such a
 - **No polling.** The meter sends each new telegram itself. There are no HTTP requests every second, no timeouts piling up, and less load on the meter's Wi-Fi.
 - **Fresh data.** A value is about as old as the telegram (1s at most on a DSMR 5 meter), not "up to one poll interval".
 - **Current API.** API v2 is HomeWizard's current local API: it needs a token and is encrypted (HTTPS/WSS). The old v1 API is open plain HTTP.
-- **Resilient.** It reconnects with backoff, falls back to HTTPS polling while the WebSocket is down, slows down when Home Assistant lags, and turns its entities unavailable when data stops. An automation never acts on a frozen value.
+- **Resilient.** It reconnects with backoff, falls back to HTTPS polling while the WebSocket is down, throttles its update rate when Home Assistant is busy, and turns its entities unavailable when data stops. An automation never acts on a frozen value.
 
 The official integration polls every 5s. Calling `homeassistant.update_entity` from an automation does not make it faster, because refresh requests are debounced with a 10s cooldown.
 
@@ -64,6 +64,8 @@ The meter is usually discovered automatically. Otherwise add **HomeWizard Realti
 2. Press the button on the P1 meter once, then select **Submit**. Home Assistant waits up to 30s for the press.
 3. The integration gets its own access token from the meter. It shows up in the meter's user list as `local/ha-realtime-push#…`, separate from the official integration's token.
 
+With the default settings there is nothing else to configure. If you run Home Assistant on an SD card or plan to enable the phase entities, read [Storage and load estimates](#storage-and-load-estimates) first.
+
 If the token is later removed, Home Assistant asks you to authenticate again (one more button press). If the meter gets a new IP address, it is picked up through discovery, or you can change it with **Reconfigure**.
 
 ### Remove
@@ -85,7 +87,7 @@ Change this under *Settings → Devices & services → HomeWizard Realtime Push 
 
 At every speed the entities show the **latest** reading, never an average.
 
-### Automatic backoff
+### Automatic backoff / throttling
 
 The integration measures how late its own timer runs (event loop lag). It steps one level slower (1 → 2 → 3 → 5s) when, over 10s:
 
@@ -99,22 +101,34 @@ After 60s without any of these it steps one level back. It never goes faster tha
 
 > These figures are **estimates** based on a typical SQLite row size. They will be replaced with measured values before version 1.0.0.
 
-A Home Assistant state row takes roughly 200 bytes including indexes. A power value changes on almost every update, so nearly every update becomes a row.
+A Home Assistant state row takes roughly 200 bytes including indexes. Power, voltage and current change on almost every update, so nearly every update becomes a row. Home Assistant keeps 10 days of history by default and then deletes the oldest rows, so the database levels off at about the size below instead of growing forever.
 
-| Speed | Writes/day per entity | ≈ per day per entity | ≈ total with the default 10-day history |
+| Speed | Rows/day per entity | Power only (default) | Power + all 9 phase entities |
 |---|---|---|---|
-| Realtime (1s) | 86,400 | 17MB | 170MB |
-| Very fast (2s) | 43,200 | 9MB | 85MB |
-| Fast (3s) | 28,800 | 6MB | 60MB |
-| Normal (5s) | 17,280 | 3.5MB | 35MB |
+| Realtime (1s) | 86,400 | ≈ 170MB | ≈ 1.7GB |
+| Very fast (2s) | 43,200 | ≈ 85MB | ≈ 850MB |
+| Fast (3s) | 28,800 | ≈ 60MB | ≈ 600MB |
+| Normal (5s) | 17,280 | ≈ 35MB | ≈ 350MB |
 
-- Multiply by the number of fast entities you enable. By default that is one (*Power*).
+- Sizes are for 10 days of history. A single-phase connection has 3 phase entities instead of 9, so 4 entities in total.
 - Long-term statistics (5-minute and hourly) are the same size at every speed.
-- **Load:** a few state changes per second is light work for Home Assistant. The real cost comes from what listens to the entities: automations and template sensors that trigger on every change, and open dashboards that show them. Trigger only on what you need, and use the backoff above as a safety net.
+- **Load:** a few state changes per second is light work for Home Assistant. The real cost comes from what listens to the entities: automations and template sensors that trigger on every change, and open dashboards that show them. Trigger only on what you need, and use the throttling above as a safety net.
 
-### Leave the fast entities out of the recorder
+### Optional: stop saving the fast entities' history
 
-Excluding the fast entities removes the database growth completely. The official integration's 5s entities still keep history and statistics. Excluded entities get no history graphs and no long-term statistics of their own.
+With the default settings (Power only, every 2s) the extra storage is small, and most installs don't need to do anything. Consider leaving the fast entities out of the recorder if:
+
+- Home Assistant runs on an SD card, for example in a Raspberry Pi (constant writes wear it out faster),
+- you enable the phase entities, or
+- you use Realtime.
+
+Excluded entities add nothing to the database. What changes:
+
+- Automations and dashboards keep working: they use the live value, not the saved history.
+- The official integration still keeps history and statistics for the same values every 5s.
+- The fast entities themselves get no history graph and no long-term statistics, so the second-by-second detail is not saved.
+
+An integration can't switch this off for its own entities; only you can, in `configuration.yaml`. Add this and restart Home Assistant:
 
 ```yaml
 # configuration.yaml
@@ -124,7 +138,7 @@ recorder:
       - sensor.p1_meter_realtime_*
 ```
 
-Adjust the pattern if you renamed the device.
+If you already have a `recorder:` section, add the pattern to its `exclude`. Adjust the pattern if you renamed the device. It also excludes the *Effective update interval* entity.
 
 ## Entities
 
