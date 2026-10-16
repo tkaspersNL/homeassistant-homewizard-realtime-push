@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-16
+
+### Changed
+
+- Values are published the moment a telegram arrives once the interval is up, instead of on a fixed timer. At 2s a value is now on average 1s old instead of 1.5s, and at most 2s instead of 3s (calculated).
+- Clearer update speed labels: "reading" instead of the DSMR term "telegram", 2s marked as recommended and 5s as the rate of the official integration.
+
+### Added
+
+- README section on how old a value is at each update speed.
+
+## [0.1.0] - 2026-10-16
+
 ### Added
 
 - Power from a HomeWizard P1 meter, pushed over the local API v2 WebSocket.

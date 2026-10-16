@@ -24,6 +24,11 @@ LATE_FRAMES_TRIGGER = 2
 MIN_LAG_SAMPLES = 2
 PERIOD_SAMPLES = 20
 MIN_PERIOD_SAMPLES = 5
+# Telegrams jitter on Wi-Fi. A frame this close to the end of the interval is
+# published at once, so a slightly early one doesn't wait a whole extra
+# telegram. Kept below the 1s telegram period so frames are never published
+# one telegram early.
+SLACK = 0.5
 
 
 class Reason(StrEnum):
@@ -54,6 +59,8 @@ class Throttle[T]:
         self._last_trouble = float("-inf")
 
         self._pending: T | None = None
+        # The frame fetched during setup counts as published.
+        self._last_publish = now
         self._last_frame: float | None = None
         self._gaps: deque[float] = deque(maxlen=PERIOD_SAMPLES)
 
@@ -95,16 +102,35 @@ class Throttle[T]:
             return None
         return median(lag for _, lag in self._lags)
 
+    @property
+    def deadline(self) -> float | None:
+        """Return when a held frame must be published if no newer one arrives."""
+        if self._pending is None:
+            return None
+        return self._last_publish + self.interval + SLACK
+
     def offer(self, frame: T, now: float) -> bool:
-        """Store a new frame. Return True when it should be published now."""
+        """Store a new frame. Return True when it should be published now.
+
+        Publishing the frame that arrives once the interval is up, instead of
+        on a fixed timer, keeps every published value as fresh as a telegram.
+        """
         self._track_frame(now)
         self._pending = frame
-        return self.publish_on_arrival
+        return (
+            self.publish_on_arrival or now - self._last_publish >= self.interval - SLACK
+        )
 
-    def take(self) -> T | None:
-        """Return the latest unpublished frame, if any, and clear it."""
+    def take(self, now: float) -> T | None:
+        """Return the latest unpublished frame, if any, and mark it published."""
         frame, self._pending = self._pending, None
+        if frame is not None:
+            self._last_publish = now
         return frame
+
+    def discard(self) -> None:
+        """Drop the held frame without publishing it."""
+        self._pending = None
 
     def record_lag(self, lag: float, now: float) -> None:
         """Record how late a scheduled tick ran."""

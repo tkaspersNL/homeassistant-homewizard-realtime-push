@@ -94,6 +94,20 @@ Change this under *Settings → Devices & services → HomeWizard Realtime Push 
 
 At every speed the entities show the **latest** reading, never an average.
 
+### How old is the value?
+
+The integration publishes the first telegram that arrives once the interval is up, so a value is as fresh as the telegram itself when it reaches Home Assistant. It then stays until the next publish. When an automation reads the value, it is this old (calculated for a DSMR 5 meter that sends a telegram every second, not measured):
+
+| Option | On average | At most |
+|---|---|---|
+| Realtime | 0.5s | 1s |
+| Very fast (2s) | 1s | 2s |
+| Fast (3s) | 1.5s | 3s |
+| Normal (5s) | 2.5s | 5s |
+| Official integration (polls every 5s) | ≈ 3s | ≈ 6s |
+
+The meter's own processing and the Wi-Fi delay come on top of this, the same for every option. A meter that sends a telegram every 10s gets each telegram published as it arrives, at every speed, so the value can be up to 10s old.
+
 ### Automatic backoff / throttling
 
 The integration measures how late its own timer runs (event loop lag). It steps one level slower (1 → 2 → 3 → 5s) when, over 10s:
@@ -235,7 +249,7 @@ A Home Assistant restart doesn't count as a problem either: while Home Assistant
 ## How data reaches Home Assistant
 
 1. The integration opens `wss://<meter>/api/ws`, authenticates with its token and subscribes to measurements. TLS is verified against HomeWizard's own certificate authority.
-2. Every telegram the meter sends is kept as the *latest* value. At the chosen interval, the latest value is published to the entities. In Realtime mode each telegram is published as it arrives.
+2. Every telegram the meter sends is kept as the *latest* value. The first telegram that arrives once the chosen interval is up is published to the entities straight away. If that telegram is late, the latest one is published 0.5s after the interval instead. In Realtime mode each telegram is published as it arrives.
 3. If the WebSocket fails, it reconnects with backoff (1, 2, 4… up to 30s, with jitter). Meanwhile it polls `https://<meter>/api/measurement` at the current interval, so values keep coming.
 4. When no value arrives for 10s (or 3 intervals, or 3 telegram gaps on meters that send less often, whichever is longest), the entities go unavailable. They come back with the next value.
 
@@ -273,7 +287,7 @@ You can, but you lose energy totals, tariffs, gas and the Energy dashboard. It i
 Less than fast polling: there is one long-lived connection instead of a request per second. It uses its own token, alongside the official integration's.
 
 **Why is the default 2s and not realtime?**
-2s is fast enough for most control loops and halves the state writes. Choose Realtime if your use case benefits from every telegram.
+2s is fast enough for most control loops and halves the state writes. The value is on average 1s old instead of 0.5s (see [How old is the value?](#how-old-is-the-value)). Choose Realtime if your use case benefits from every telegram.
 
 **Why do I see a second device for my meter?**
 The fast entities have their own device, so their entity IDs don't collide with the official ones and you can exclude them from the recorder with one pattern.

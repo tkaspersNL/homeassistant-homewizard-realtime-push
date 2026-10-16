@@ -7,6 +7,7 @@ import pytest
 from custom_components.homewizard_realtime_push.throttle import (
     CLEAN_PERIOD,
     LEVELS,
+    SLACK,
     WINDOW,
     Reason,
     Throttle,
@@ -40,15 +41,52 @@ def test_initial_state() -> None:
 def test_realtime_publishes_on_arrival() -> None:
     throttle = Throttle[int](1.0, now=0)
     assert throttle.offer(1, 0.0) is True
-    assert throttle.take() == 1
+    assert throttle.take(0.0) == 1
 
 
 def test_take_returns_latest_frame_once() -> None:
     throttle = Throttle[int](2.0, now=0)
-    assert throttle.offer(1, 0.0) is False
+    assert throttle.offer(1, 0.5) is False
     assert throttle.offer(2, 1.0) is False
-    assert throttle.take() == 2
-    assert throttle.take() is None
+    assert throttle.take(1.0) == 2
+    assert throttle.take(1.0) is None
+
+
+def test_publishes_the_frame_that_arrives_when_the_interval_is_up() -> None:
+    throttle = Throttle[int](2.0, now=0)
+    assert throttle.offer(1, 1.0) is False
+    assert throttle.offer(2, 2.0) is True
+    throttle.take(2.0)
+    # The interval counts from the last publish, so it follows the telegrams.
+    assert throttle.offer(3, 3.0) is False
+    assert throttle.offer(4, 4.0) is True
+
+
+def test_slightly_early_frame_does_not_wait_a_telegram() -> None:
+    throttle = Throttle[int](2.0, now=0)
+    assert throttle.offer(1, 2.0 - SLACK - 0.01) is False
+    assert throttle.offer(2, 2.0 - SLACK) is True
+
+
+def test_deadline_for_held_frame() -> None:
+    throttle = Throttle[int](3.0, now=0)
+    assert throttle.deadline is None
+    throttle.offer(1, 1.0)
+    assert throttle.deadline == 3.0 + SLACK
+    throttle.take(3.5)
+    assert throttle.deadline is None
+    throttle.offer(2, 4.0)
+    assert throttle.deadline == 3.5 + 3.0 + SLACK
+
+
+def test_discard_drops_held_frame() -> None:
+    throttle = Throttle[int](2.0, now=0)
+    throttle.offer(1, 1.0)
+    throttle.discard()
+    assert throttle.deadline is None
+    assert throttle.take(1.0) is None
+    # Discarding is not publishing: the next frame is still due on time.
+    assert throttle.offer(2, 2.0) is True
 
 
 def test_steps_up_on_loop_lag_after_full_window() -> None:

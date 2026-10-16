@@ -92,24 +92,104 @@ def tick(hub: RealtimeHub, clock: Clock, seconds: float) -> None:
     hub._tick(clock.now)
 
 
-async def test_publishes_latest_frame_once_per_interval(make_hub, clock) -> None:
+def frame(hub: RealtimeHub, clock: Clock, seconds: float, power: int) -> None:
+    """Advance the clock and deliver a frame."""
+    clock.now += seconds
+    hub.on_measurement(make_measurement(power_w=power))
+
+
+async def test_publishes_frame_on_arrival_once_per_interval(make_hub, clock) -> None:
     hub = make_hub(UpdateSpeed.VERY_FAST)
     calls = counter(hub)
 
-    for power in (10, 20, 30):
-        clock.now += 0.5
-        hub.on_measurement(make_measurement(power_w=power))
+    frame(hub, clock, 0.5, 10)
+    frame(hub, clock, 0.5, 20)
     assert calls[0] == 0
     assert hub.measurement.power_w == 0
 
+    # Published the moment it arrives, so it is as fresh as the telegram.
+    frame(hub, clock, 1, 30)
+    assert calls[0] == 1
+    assert hub.measurement.power_w == 30
+    assert hub._hold is None
+
+    # The timer does not publish.
     tick(hub, clock, 0.5)
     assert calls[0] == 1
-    # The latest value, not an average.
-    assert hub.measurement.power_w == 30
 
-    # Nothing new: no publish.
-    tick(hub, clock, 2)
+    frame(hub, clock, 0.5, 40)
+    frame(hub, clock, 1, 50)
+    assert calls[0] == 2
+    # The latest value, not an average.
+    assert hub.measurement.power_w == 50
+
+
+async def test_held_frame_is_published_when_the_next_one_is_late(
+    hass: HomeAssistant, make_hub, clock
+) -> None:
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    calls = counter(hub)
+
+    frame(hub, clock, 1, 10)
+    assert calls[0] == 0
+    assert hub._hold is not None
+    delay = hub._hold.when() - hass.loop.time()
+    assert 1.4 < delay <= 1.5
+
+    # Fire the timer by hand.
+    clock.now += 1.5
+    hub._hold.cancel()
+    hub._publish_held()
     assert calls[0] == 1
+    assert hub.measurement.power_w == 10
+    assert hub._hold is None
+
+    # Nothing held: firing again publishes nothing.
+    hub._publish_held()
+    assert calls[0] == 1
+
+
+async def test_due_frame_cancels_the_hold(make_hub, clock) -> None:
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    frame(hub, clock, 1, 10)
+    hold = hub._hold
+    assert hold is not None
+
+    frame(hub, clock, 1, 20)
+    assert hold.cancelled()
+    assert hub._hold is None
+    assert hub.measurement.power_w == 20
+
+
+async def test_unavailable_drops_the_held_frame(make_hub, clock) -> None:
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    frame(hub, clock, 1, 10)
+    hold = hub._hold
+    assert hold is not None
+
+    hub._set_unavailable(clock.now)
+    assert hold.cancelled()
+    assert hub.throttle.deadline is None
+
+    frame(hub, clock, 0.1, 20)
+    assert hub.available is True
+    assert hub.measurement.power_w == 20
+
+
+async def test_stop_cancels_the_hold(hass: HomeAssistant, make_hub, clock) -> None:
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    frame(hub, clock, 1, 10)
+    hold = hub._hold
+    assert hold is not None
+    hub._async_hass_stopping(MagicMock())
+    assert hold.cancelled()
+
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    frame(hub, clock, 1, 10)
+    hold = hub._hold
+    assert hold is not None
+    hub.async_stop()
+    assert hold.cancelled()
 
 
 async def test_realtime_publishes_on_arrival(make_hub, clock) -> None:
@@ -131,7 +211,7 @@ async def test_goes_unavailable_when_frames_stop_and_recovers(
     calls = counter(hub)
     assert hub.stale_after == 10
 
-    hub.on_measurement(make_measurement(power_w=1))
+    frame(hub, clock, 2, 1)
     for _ in range(5):
         tick(hub, clock, 2)
     assert hub.available is True

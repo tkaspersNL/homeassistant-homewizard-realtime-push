@@ -59,6 +59,7 @@ class RealtimeHub:
         self.throttle = Throttle[Measurement](UPDATE_SPEED_INTERVAL[speed], now)
         self._last_frame = now
         self._timer: asyncio.TimerHandle | None = None
+        self._hold: asyncio.TimerHandle | None = None
         self._listeners: list[CALLBACK_TYPE] = []
         self._status_listeners: list[CALLBACK_TYPE] = []
 
@@ -104,7 +105,7 @@ class RealtimeHub:
 
     @callback
     def async_start(self) -> None:
-        """Start streaming and the publish timer."""
+        """Start streaming and the timer that checks lag, staleness and issues."""
         self.entry.async_create_background_task(
             self.hass, self.client.run(), name=f"{DOMAIN} {self.api.host}"
         )
@@ -115,8 +116,9 @@ class RealtimeHub:
 
     @callback
     def async_stop(self) -> None:
-        """Stop the timer and clear issues; the client task ends with the entry."""
+        """Stop the timers and clear issues; the client task ends with the entry."""
         self._cancel_timer()
+        self._cancel_hold()
         if self._unsub_stop is not None:
             self._unsub_stop()
             self._unsub_stop = None
@@ -133,6 +135,7 @@ class RealtimeHub:
         self._unsub_stop = None
         self._stopping = True
         self._cancel_timer()
+        self._cancel_hold()
 
     @callback
     def async_add_listener(self, update: CALLBACK_TYPE) -> CALLBACK_TYPE:
@@ -160,8 +163,12 @@ class RealtimeHub:
             self._clear_issue(Issue.NO_DATA)
             publish_now = True
             self._notify(self._status_listeners)
-        if publish_now and (latest := self.throttle.take()) is not None:
-            self._publish(latest)
+        if publish_now:
+            self._publish_pending()
+        elif self._hold is None and (deadline := self.throttle.deadline) is not None:
+            self._hold = self.hass.loop.call_later(
+                max(0.0, deadline - now), self._publish_held
+            )
 
     @callback
     def on_transport(self, transport: Transport) -> None:
@@ -210,12 +217,6 @@ class RealtimeHub:
                 now - self._last_frame,
             )
             self._set_unavailable(now)
-        elif (
-            self.available
-            and not self.throttle.publish_on_arrival
-            and (latest := self.throttle.take()) is not None
-        ):
-            self._publish(latest)
 
         if self.throttle.evaluate(now):
             LOGGER.info(
@@ -288,12 +289,29 @@ class RealtimeHub:
             self._timer.cancel()
             self._timer = None
 
+    @callback
+    def _publish_held(self) -> None:
+        # The next frame is late; don't keep the held one back any longer.
+        self._hold = None
+        self._publish_pending()
+
+    def _publish_pending(self) -> None:
+        self._cancel_hold()
+        if (latest := self.throttle.take(self._clock())) is not None:
+            self._publish(latest)
+
+    def _cancel_hold(self) -> None:
+        if self._hold is not None:
+            self._hold.cancel()
+            self._hold = None
+
     def _set_unavailable(self, now: float) -> None:
         if self.available:
             self._since[Issue.NO_DATA] = now
         self.available = False
         # Never publish a frame from before the gap.
-        self.throttle.take()
+        self.throttle.discard()
+        self._cancel_hold()
         self._notify(self._listeners)
         self._notify(self._status_listeners)
 
