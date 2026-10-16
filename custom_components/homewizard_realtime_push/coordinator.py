@@ -6,8 +6,8 @@ import asyncio
 from collections.abc import Callable
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_TOKEN
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.const import CONF_TOKEN, EVENT_HOMEASSISTANT_STOP
+from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homewizard_energy import HomeWizardEnergyV2
@@ -63,6 +63,8 @@ class RealtimeHub:
         self._status_listeners: list[CALLBACK_TYPE] = []
 
         self._token_rejected = False
+        self._stopping = False
+        self._unsub_stop: CALLBACK_TYPE | None = None
         # When each issue condition started; None while it does not hold.
         self._since: dict[Issue, float | None] = dict.fromkeys(Issue)
         self._raised: set[Issue] = set()
@@ -106,14 +108,31 @@ class RealtimeHub:
         self.entry.async_create_background_task(
             self.hass, self.client.run(), name=f"{DOMAIN} {self.api.host}"
         )
+        self._unsub_stop = self.hass.bus.async_listen_once(
+            EVENT_HOMEASSISTANT_STOP, self._async_hass_stopping
+        )
         self._schedule(self._clock() + self.throttle.interval)
 
     @callback
     def async_stop(self) -> None:
         """Stop the timer and clear issues; the client task ends with the entry."""
         self._cancel_timer()
+        if self._unsub_stop is not None:
+            self._unsub_stop()
+            self._unsub_stop = None
         for issue in Issue:
             self._clear_issue(issue)
+
+    @callback
+    def _async_hass_stopping(self, _event: Event) -> None:
+        # The connection closes during shutdown; that is not a meter problem,
+        # so freeze the entities instead of reporting stale data.
+        LOGGER.debug(
+            "Home Assistant is stopping; pausing updates for %s", self.api.host
+        )
+        self._unsub_stop = None
+        self._stopping = True
+        self._cancel_timer()
 
     @callback
     def async_add_listener(self, update: CALLBACK_TYPE) -> CALLBACK_TYPE:
@@ -128,6 +147,8 @@ class RealtimeHub:
     @callback
     def on_measurement(self, measurement: Measurement) -> None:
         """Handle a frame from the client."""
+        if self._stopping:
+            return
         now = self._clock()
         gap = now - self._last_frame
         self._last_frame = now
@@ -145,6 +166,8 @@ class RealtimeHub:
     @callback
     def on_transport(self, transport: Transport) -> None:
         """Handle a transport change from the client."""
+        if self._stopping:
+            return
         now = self._clock()
         if self.transport is Transport.WEBSOCKET:
             self.throttle.record_reconnect(now)
@@ -168,6 +191,8 @@ class RealtimeHub:
     @callback
     def on_auth_failed(self) -> None:
         """Handle a rejected token."""
+        if self._stopping:
+            return
         LOGGER.warning("%s rejected the token; reauthentication needed", self.api.host)
         self._token_rejected = True
         self._set_unavailable(self._clock())

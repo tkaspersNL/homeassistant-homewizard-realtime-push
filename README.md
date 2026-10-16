@@ -230,7 +230,7 @@ actions:
               message: Grid data from the P1 meter is back.
 ```
 
-Polling and slowing down don't set Status to *Problem*: the data is still fresh then, and pausing for that would do more harm than good.
+A Home Assistant restart doesn't count as a problem either: while Home Assistant shuts down, the entities keep their last state instead of reporting a gap. Polling and slowing down don't set Status to *Problem*: the data is still fresh then, and pausing for that would do more harm than good.
 
 ## How data reaches Home Assistant
 
