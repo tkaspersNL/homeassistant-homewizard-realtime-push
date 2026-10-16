@@ -33,6 +33,8 @@ Keep the official integration for history, statistics and the Energy dashboard. 
 
 The fast entities live on their own device, named after the meter with "Realtime" added (for example *P1 Meter Realtime*). Entity IDs therefore do not clash with the official ones, for example `sensor.p1_meter_realtime_power` next to `sensor.p1_meter_power`.
 
+If the device is in an area, Home Assistant may put the area name in front of entity IDs, for example `binary_sensor.hallway_p1_meter_realtime_problem`. The examples below use IDs without an area; check yours under *Settings → Devices & services → Entities*.
+
 ## Requirements
 
 - A HomeWizard **P1 meter** on **firmware 6 or newer** (API v2). Other HomeWizard devices are not supported.
@@ -135,10 +137,10 @@ An integration can't switch this off for its own entities; only you can, in `con
 recorder:
   exclude:
     entity_globs:
-      - sensor.p1_meter_realtime_*
+      - sensor.*p1_meter_realtime_*
 ```
 
-If you already have a `recorder:` section, add the pattern to its `exclude`. Adjust the pattern if you renamed the device. It also excludes the *Effective update interval* entity.
+If you already have a `recorder:` section, add the pattern to its `exclude`. The leading `*` also matches IDs with an area name in front. Adjust the pattern if you renamed the device. It also excludes the *Effective update interval* entity.
 
 ## Entities
 
