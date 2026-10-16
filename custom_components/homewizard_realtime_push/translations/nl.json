@@ -1,0 +1,155 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "HomeWizard Realtime Push instellen",
+        "description": "Vul het IP-adres van je HomeWizard P1-meter in. Die heeft firmware 6 of nieuwer nodig (API v2).",
+        "data": {
+          "ip_address": "IP-adres"
+        },
+        "data_description": {
+          "ip_address": "Het IP-adres van de P1-meter, zoals de HomeWizard-app of je router het toont."
+        }
+      },
+      "discovery_confirm": {
+        "title": "HomeWizard P1-meter gevonden",
+        "description": "{name} op {host} instellen voor realtime updates? Dit draait naast de officiële HomeWizard-integratie en vervangt die niet."
+      },
+      "authorize": {
+        "title": "Druk op de knop van je P1-meter",
+        "description": "Druk één keer op de knop van de P1-meter en kies daarna Verzenden. Home Assistant wacht maximaal {wait}s op de druk en haalt dan een eigen toegangstoken op bij de meter."
+      },
+      "reauth_confirm": {
+        "title": "Nieuw toegangstoken nodig",
+        "description": "De P1-meter accepteert het opgeslagen token niet meer, bijvoorbeeld omdat het in de HomeWizard-app is verwijderd. Kies Verzenden om een nieuw token aan te vragen; je moet dan op de knop van de meter drukken."
+      },
+      "reconfigure": {
+        "title": "IP-adres wijzigen",
+        "description": "Vul het nieuwe IP-adres van dezelfde P1-meter in. Het opgeslagen token blijft in gebruik.",
+        "data": {
+          "ip_address": "IP-adres"
+        },
+        "data_description": {
+          "ip_address": "Het nieuwe IP-adres van de P1-meter."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Geen HomeWizard-apparaat met API v2 bereikbaar op dit adres. Controleer het IP-adres en of het apparaat online is.",
+      "button_not_pressed": "Er is niet op tijd een knopdruk gezien. Druk op de knop van de P1-meter en kies opnieuw Verzenden.",
+      "token_rejected": "Het apparaat op dit adres accepteert het opgeslagen token niet. Is het dezelfde P1-meter?"
+    },
+    "abort": {
+      "already_configured": "Apparaat is al geconfigureerd",
+      "cannot_connect": "Kan geen verbinding maken",
+      "firmware_too_old": "Dit apparaat ondersteunt alleen de oude v1-API. Werk de P1-meter bij naar firmware 6 of nieuwer, of gebruik de officiële HomeWizard-integratie.",
+      "invalid_discovery_parameters": "Het gevonden apparaat gaf geen producttype en serienummer door.",
+      "not_p1_meter": "Deze integratie ondersteunt alleen de HomeWizard P1-meter. Gebruik voor andere apparaten de officiële HomeWizard-integratie.",
+      "reauth_successful": "Herauthenticatie geslaagd",
+      "reconfigure_successful": "Herconfiguratie geslaagd",
+      "wrong_device": "Dit is een andere P1-meter dan die eerder is ingesteld."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Updatesnelheid",
+        "description": "Hoe vaak de entiteiten bijwerken. Sneller betekent meer statuswijzigingen: meer CPU, meer triggers voor automatiseringen en templates, en een snellere groei van de database. De integratie gaat vanzelf langzamer als Home Assistant het druk heeft. Wijzigingen gelden na een herlaadactie, die automatisch gebeurt.",
+        "data": {
+          "update_speed": "Updatesnelheid"
+        },
+        "data_description": {
+          "update_speed": "Realtime volgt je meter: ongeveer 1s bij een DSMR 5-meter, 10s bij oudere meters. Zie de README voor schattingen van de opslag."
+        }
+      }
+    }
+  },
+  "selector": {
+    "update_speed": {
+      "options": {
+        "realtime": "Realtime: elke meting (~1s bij DSMR 5)",
+        "very_fast": "Zeer snel: 2s (aanbevolen)",
+        "fast": "Snel: 3s",
+        "normal": "Normaal: 5s (zoals de officiële integratie)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "status": {
+        "name": "Status",
+        "state_attributes": {
+          "reason": {
+            "name": "Reden",
+            "state": {
+              "no_data": "Geen metingen",
+              "token_rejected": "Token geweigerd"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Vermogen"
+      },
+      "power_phase": {
+        "name": "Vermogen fase {phase}"
+      },
+      "voltage_phase": {
+        "name": "Spanning fase {phase}"
+      },
+      "current_phase": {
+        "name": "Stroom fase {phase}"
+      },
+      "effective_interval": {
+        "name": "Effectief update-interval",
+        "state_attributes": {
+          "configured_interval": {
+            "name": "Ingesteld interval"
+          },
+          "reason": {
+            "name": "Reden",
+            "state": {
+              "configured": "Ingestelde snelheid",
+              "loop_lag": "Home Assistant heeft het druk",
+              "late_frames": "Metingen komen te laat binnen",
+              "reconnect": "Verbinding weggevallen"
+            }
+          },
+          "transport": {
+            "name": "Transport",
+            "state": {
+              "connecting": "Verbinden",
+              "websocket": "WebSocket-push",
+              "polling": "HTTPS-polling (terugvaloptie)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "De P1-meter op {host} is niet bereikbaar."
+    },
+    "token_rejected": {
+      "message": "De P1-meter heeft het toegangstoken geweigerd."
+    }
+  },
+  "issues": {
+    "no_data": {
+      "title": "Geen metingen van {name}",
+      "description": "De P1-meter heeft al minstens {minutes} minuten geen metingen gestuurd en de realtime entiteiten zijn niet beschikbaar. Alles wat een thuisbatterij of verbruik regelt op basis van deze entiteiten, werkt nu zonder netgegevens.\n\nControleer of de meter stroom heeft en online is in de HomeWizard-app, en of Home Assistant hem via het netwerk kan bereiken. Deze melding verdwijnt vanzelf zodra er weer metingen binnenkomen."
+    },
+    "polling_fallback": {
+      "title": "{name} pusht geen metingen",
+      "description": "Al minstens {minutes} minuten werkt de WebSocket naar de P1-meter niet, dus vraagt de integratie de meter via HTTPS uit. Er komen nog steeds waarden binnen, maar minder efficiënt.\n\nDe meter herstarten helpt meestal. Blijft het gebeuren, open dan een issue op GitHub met de diagnostische gegevens en debuglogs. Deze melding verdwijnt vanzelf zodra de WebSocket weer werkt."
+    },
+    "throttled": {
+      "title": "{name} werkt langzamer bij dan ingesteld",
+      "description": "Al minstens {minutes} minuten werkt de integratie langzamer bij dan de gekozen updatesnelheid, omdat Home Assistant het druk heeft, metingen te laat binnenkomen of de verbinding steeds wegvalt. De entiteit *Effectief update-interval* toont de reden.\n\nZoek naar zware automatiseringen of integraties, of kies een lagere updatesnelheid. Deze melding verdwijnt vanzelf zodra de ingestelde snelheid weer gehaald wordt."
+    }
+  }
+}

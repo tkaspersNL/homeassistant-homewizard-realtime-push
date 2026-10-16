@@ -1,0 +1,69 @@
+name: Bug report
+description: Something does not work as described.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please check the README's troubleshooting section first.
+        Diagnostics are redacted (token, serial and IP address are removed), but check the file before you attach it.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Integration version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.10.1"
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: P1 meter firmware version
+      description: Shown in the HomeWizard app and in the diagnostics.
+    validations:
+      required: true
+  - type: dropdown
+    id: speed
+    attributes:
+      label: Update speed
+      options:
+        - Realtime
+        - Very fast (2s)
+        - Fast (3s)
+        - Normal (5s)
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Download diagnostics. Drag the file here.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Debug logs
+      description: Enable debug logging on the integration, reproduce the problem, then paste the relevant lines.
+      render: text
+    validations:
+      required: false

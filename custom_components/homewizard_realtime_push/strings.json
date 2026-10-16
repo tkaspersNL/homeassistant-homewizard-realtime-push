@@ -1,0 +1,155 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Set up HomeWizard Realtime Push",
+        "description": "Enter the IP address of your HomeWizard P1 meter. It needs firmware 6 or newer (API v2).",
+        "data": {
+          "ip_address": "[%key:common::config_flow::data::ip%]"
+        },
+        "data_description": {
+          "ip_address": "The IP address of the P1 meter, as shown in the HomeWizard app or your router."
+        }
+      },
+      "discovery_confirm": {
+        "title": "HomeWizard P1 meter found",
+        "description": "Set up {name} at {host} for realtime updates? This runs next to the official HomeWizard integration and does not replace it."
+      },
+      "authorize": {
+        "title": "Press the button on your P1 meter",
+        "description": "Press the button on the P1 meter once, then select Submit. Home Assistant waits up to {wait}s for the press and then gets its own access token from the meter."
+      },
+      "reauth_confirm": {
+        "title": "New access token needed",
+        "description": "The P1 meter no longer accepts the stored token, for example because it was removed in the HomeWizard app. Select Submit to request a new one; you will need to press the button on the meter."
+      },
+      "reconfigure": {
+        "title": "Change the IP address",
+        "description": "Enter the new IP address of the same P1 meter. The stored token is reused.",
+        "data": {
+          "ip_address": "[%key:common::config_flow::data::ip%]"
+        },
+        "data_description": {
+          "ip_address": "The new IP address of the P1 meter."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Can't reach a HomeWizard device with API v2 at this address. Check the IP address and that the device is online.",
+      "button_not_pressed": "No button press was detected in time. Press the button on the P1 meter and select Submit again.",
+      "token_rejected": "The device at this address does not accept the stored token. Is it the same P1 meter?"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "firmware_too_old": "This device only supports the old v1 API. Update the P1 meter to firmware 6 or newer, or use the official HomeWizard integration.",
+      "invalid_discovery_parameters": "The discovered device did not report a product type and serial number.",
+      "not_p1_meter": "This integration supports the HomeWizard P1 meter only. Use the official HomeWizard integration for other devices.",
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",
+      "wrong_device": "This is a different P1 meter than the one that was set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update speed",
+        "description": "How often the entities update. Faster means more state changes: more CPU, more automation and template triggers, and more database growth. The integration slows down on its own when Home Assistant is busy. Changes apply after a reload, which happens automatically.",
+        "data": {
+          "update_speed": "Update speed"
+        },
+        "data_description": {
+          "update_speed": "Realtime follows your meter: about 1s on a DSMR 5 meter, 10s on older meters. See the README for storage estimates."
+        }
+      }
+    }
+  },
+  "selector": {
+    "update_speed": {
+      "options": {
+        "realtime": "Realtime: every reading (~1s on DSMR 5)",
+        "very_fast": "Very fast: 2s (recommended)",
+        "fast": "Fast: 3s",
+        "normal": "Normal: 5s (same as the official integration)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "status": {
+        "name": "Status",
+        "state_attributes": {
+          "reason": {
+            "name": "Reason",
+            "state": {
+              "no_data": "No measurements",
+              "token_rejected": "Token rejected"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Power"
+      },
+      "power_phase": {
+        "name": "Power phase {phase}"
+      },
+      "voltage_phase": {
+        "name": "Voltage phase {phase}"
+      },
+      "current_phase": {
+        "name": "Current phase {phase}"
+      },
+      "effective_interval": {
+        "name": "Effective update interval",
+        "state_attributes": {
+          "configured_interval": {
+            "name": "Configured interval"
+          },
+          "reason": {
+            "name": "Reason",
+            "state": {
+              "configured": "Configured speed",
+              "loop_lag": "Home Assistant is busy",
+              "late_frames": "Measurements arrive late",
+              "reconnect": "Connection dropped"
+            }
+          },
+          "transport": {
+            "name": "Transport",
+            "state": {
+              "connecting": "Connecting",
+              "websocket": "WebSocket push",
+              "polling": "HTTPS polling (fallback)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Can't reach the P1 meter at {host}."
+    },
+    "token_rejected": {
+      "message": "The P1 meter rejected the access token."
+    }
+  },
+  "issues": {
+    "no_data": {
+      "title": "No measurements from {name}",
+      "description": "The P1 meter has sent no measurements for at least {minutes} minutes, and its realtime entities are unavailable. Anything that controls a home battery or load from these entities is working without grid data.\n\nCheck that the meter is powered and online in the HomeWizard app, and that Home Assistant can reach it on the network. This message disappears by itself when measurements return."
+    },
+    "polling_fallback": {
+      "title": "{name} is not pushing measurements",
+      "description": "For at least {minutes} minutes the WebSocket to the P1 meter has not worked, so the integration polls the meter over HTTPS instead. Values still arrive, but less efficiently.\n\nRestarting the meter usually helps. If it keeps happening, open an issue on GitHub with the diagnostics and debug logs. This message disappears by itself when the WebSocket works again."
+    },
+    "throttled": {
+      "title": "{name} updates slower than configured",
+      "description": "For at least {minutes} minutes the integration has updated slower than the update speed you chose, because Home Assistant is busy, measurements arrive late, or the connection keeps dropping. The *Effective update interval* entity shows the reason.\n\nLook for heavy automations or integrations, or choose a slower update speed. This message disappears by itself when the configured speed is reached again."
+    }
+  }
+}
