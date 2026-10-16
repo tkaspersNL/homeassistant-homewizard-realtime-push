@@ -38,7 +38,7 @@ Keep the official integration for history, statistics and the Energy dashboard. 
 
 The fast entities live on their own device, named after the meter with "Realtime" added (for example *P1 Meter Realtime*). Entity IDs therefore do not clash with the official ones, for example `sensor.p1_meter_realtime_power` next to `sensor.p1_meter_power`.
 
-If the device is in an area, Home Assistant may put the area name in front of entity IDs, for example `binary_sensor.hallway_p1_meter_realtime_problem`. The examples below use IDs without an area; check yours under *Settings → Devices & services → Entities*.
+If the device is in an area, Home Assistant may put the area name in front of entity IDs, for example `binary_sensor.hallway_p1_meter_realtime_status`. The examples below use IDs without an area; check yours under *Settings → Devices & services → Entities*.
 
 ## Requirements
 
@@ -156,7 +156,7 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. The
 | Voltage phase 1/2/3 | V | no |
 | Current phase 1/2/3 | A | no |
 | Effective update interval (diagnostic) | s | yes |
-| Problem (diagnostic) | on/off | yes |
+| Status (diagnostic) | OK / Problem | yes |
 
 - **Power** uses the same sign as the official integration: positive when you import from the grid, negative when you export.
 - Phase entities are only created for phases the meter reports. A single-phase connection gets phase 1 only.
@@ -164,7 +164,7 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. The
   - `configured_interval`: the option you chose, in seconds
   - `reason`: `configured`, `loop_lag`, `late_frames` or `reconnect`
   - `transport`: `websocket`, `polling` (fallback) or `connecting`
-- **Problem** is *on* when there is no fresh data, and *off* otherwise. Its `reason` attribute says why: `no_data` (nothing arrived for 10s or more) or `token_rejected` (the meter no longer accepts the token). It stays available itself, so automations can rely on it. See [Safety](#safety-when-the-data-stops).
+- **Status** shows *Problem* (state `on`) when there is no fresh data, and *OK* (state `off`) otherwise. Its `reason` attribute says why: `no_data` (nothing arrived for 10s or more) or `token_rejected` (the meter no longer accepts the token). It stays available itself, so automations can rely on it. See [Safety](#safety-when-the-data-stops).
 
 There are no energy totals, tariffs or gas entities on purpose: the official integration covers those, and they don't need fast updates.
 
@@ -175,7 +175,7 @@ If something controls a battery or a load from these entities, decide what it sh
 The integration helps in three ways:
 
 - **Unavailable entities.** When no value arrives for 10s or more, the fast entities become *unavailable*. They never keep showing an old value.
-- **The Problem sensor** turns *on* at the same moment and *off* when fresh data returns. Use it to pause control and to alert yourself.
+- **The Status sensor** switches to *Problem* at the same moment and back to *OK* when fresh data returns. Use it to pause control and to alert yourself.
 - **Repairs.** If a problem lasts, a message appears under *Settings → System → Repairs*. It disappears by itself when the problem is over.
 
   | Message | Appears after | Meaning |
@@ -193,12 +193,12 @@ alias: Pause battery control when grid data stops
 mode: restart
 triggers:
   - trigger: state
-    entity_id: binary_sensor.p1_meter_realtime_problem
+    entity_id: binary_sensor.p1_meter_realtime_status
     to: "on"
     for: "00:00:30"
     id: stopped
   - trigger: state
-    entity_id: binary_sensor.p1_meter_realtime_problem
+    entity_id: binary_sensor.p1_meter_realtime_status
     from: "on"
     to: "off"
     id: back
@@ -216,7 +216,7 @@ actions:
               title: Battery control paused
               message: >-
                 No grid data from the P1 meter
-                ({{ state_attr('binary_sensor.p1_meter_realtime_problem', 'reason') }}).
+                ({{ state_attr('binary_sensor.p1_meter_realtime_status', 'reason') }}).
       - conditions:
           - condition: trigger
             id: back
@@ -230,7 +230,7 @@ actions:
               message: Grid data from the P1 meter is back.
 ```
 
-Polling and slowing down don't turn the Problem sensor on: the data is still fresh then, and pausing for that would do more harm than good.
+Polling and slowing down don't set Status to *Problem*: the data is still fresh then, and pausing for that would do more harm than good.
 
 ## How data reaches Home Assistant
 
@@ -241,7 +241,7 @@ Polling and slowing down don't turn the Problem sensor on: the data is still fre
 
 ## Troubleshooting and diagnostics
 
-- **Entities are unavailable / Problem is on.** The meter sent nothing for a while. Check that it is online in the HomeWizard app. The integration reconnects by itself. The log has a warning when values stop and an info line when they are back.
+- **Entities are unavailable / Status shows Problem.** The meter sent nothing for a while. Check that it is online in the HomeWizard app. The integration reconnects by itself. The log has a warning when values stop and an info line when they are back.
 - **A message under Repairs.** See [Safety](#safety-when-the-data-stops) for what each one means. They clear themselves when the problem is over.
 - **`transport` stays on `polling`.** The WebSocket could not be used and the integration fell back to HTTPS polling. Values still arrive, but less efficiently. Please open an issue with diagnostics and debug logs.
 - **`reason` is `loop_lag`.** Home Assistant was too busy to keep up. Look for heavy automations or integrations, or choose a slower option.

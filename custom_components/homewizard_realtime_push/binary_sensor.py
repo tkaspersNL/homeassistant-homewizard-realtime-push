@@ -1,4 +1,4 @@
-"""Problem sensor for HomeWizard Realtime Push."""
+"""Status sensor for HomeWizard Realtime Push."""
 
 from __future__ import annotations
 
@@ -21,19 +21,20 @@ async def async_setup_entry(
     entry: HomeWizardRealtimeConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the problem sensor."""
-    async_add_entities([ProblemBinarySensor(entry.runtime_data)])
+    """Set up the status sensor."""
+    async_add_entities([StatusBinarySensor(entry.runtime_data)])
 
 
-class ProblemBinarySensor(RealtimeEntity, BinarySensorEntity):
-    """On when there is no fresh data, so automations can fail safe."""
+class StatusBinarySensor(RealtimeEntity, BinarySensorEntity):
+    """OK, or Problem (on) when there is no fresh data, so automations can fail safe."""
 
-    _attr_translation_key = "problem"
+    _attr_translation_key = "status"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, hub: RealtimeHub) -> None:
         """Set up the sensor."""
+        # The unique ID keeps its original key so existing entities stay put.
         super().__init__(hub, "problem")
 
     async def async_added_to_hass(self) -> None:

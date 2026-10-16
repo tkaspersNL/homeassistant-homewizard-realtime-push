@@ -77,8 +77,8 @@
   },
   "entity": {
     "binary_sensor": {
-      "problem": {
-        "name": "Problem",
+      "status": {
+        "name": "Status",
         "state_attributes": {
           "reason": {
             "name": "Reason",

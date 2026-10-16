@@ -1,7 +1,7 @@
 {
   "entity": {
     "binary_sensor": {
-      "problem": {
+      "status": {
         "default": "mdi:check-circle-outline",
         "state": {
           "on": "mdi:alert-circle-outline"
