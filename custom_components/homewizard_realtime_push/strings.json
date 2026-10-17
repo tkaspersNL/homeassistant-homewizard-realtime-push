@@ -55,12 +55,12 @@
     "step": {
       "init": {
         "title": "Update speed",
-        "description": "How often the entities update. Faster means more state changes: more CPU, more automation and template triggers, and more database growth.\n\n**Adaptive speed:** if Home Assistant or your hardware can't keep up, readings arrive late, or the connection drops, the integration automatically steps the speed down one level, up to 5s at most. Once everything runs smoothly again, the speed returns to your choice on its own. *Current update interval* on the device page shows the current speed and the reason.\n\nChanges apply right away.",
+        "description": "How often power is updated. Faster gives a fresher reading, but costs more CPU and database storage. If Home Assistant can't keep up or the connection falters, the speed temporarily steps down (to 5s at most) and recovers automatically. Changes apply immediately; no restart needed.",
         "data": {
           "update_speed": "Update speed"
         },
         "data_description": {
-          "update_speed": "Realtime follows your meter: about 1s on a DSMR 5 meter, 10s on older meters. Choose Realtime for the fastest control, Normal for the smallest database. See the README for storage estimates."
+          "update_speed": "Realtime follows your meter: about 1s on a DSMR 5 meter, 10s on older meters. See the README for storage estimates."
         }
       }
     }

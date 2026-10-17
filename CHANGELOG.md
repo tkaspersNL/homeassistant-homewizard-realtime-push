@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The update speed dialog explains the automatic backoff: why it steps down, how it steps back up, and that it never goes faster than the speed you chose.
+- The update speed dialog is shorter: it says what a faster speed gives and costs, and that the speed temporarily steps down (to 5s at most) and recovers automatically. The README has the details.
 - 2s is labelled as the default instead of recommended.
 - The update speed steps back up after 30s without problems instead of 60s, so a rare slowdown recovers sooner.
 - The diagnostic entity is renamed to *Current update interval* (nl: *Actueel update-interval*).

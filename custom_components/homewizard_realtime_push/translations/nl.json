@@ -55,12 +55,12 @@
     "step": {
       "init": {
         "title": "Updatesnelheid",
-        "description": "Hoe vaak de entiteiten bijwerken. Sneller betekent meer statuswijzigingen: meer CPU, meer triggers voor automatiseringen en templates, en een snellere groei van de database.\n\n**Adaptieve snelheid:** als Home Assistant of je hardware het tempo niet bijhoudt, metingen te laat binnenkomen of de verbinding wegvalt, schakelt de integratie de snelheid automatisch een stap terug, tot hooguit 5s. Zodra alles weer soepel loopt, gaat de snelheid vanzelf weer terug naar je keuze. *Actueel update-interval* op de apparaatpagina toont de huidige snelheid en de reden.\n\nWijzigingen gaan direct in.",
+        "description": "Hoe vaak het vermogen wordt bijgewerkt. Sneller geeft een versere meting, maar kost meer CPU en databaseopslag. Houdt Home Assistant het niet bij of hapert de verbinding, dan gaat de snelheid tijdelijk stapsgewijs omlaag (tot hooguit 5s) en herstelt die zich automatisch. Wijzigingen gaan direct in; herstarten is niet nodig.",
         "data": {
           "update_speed": "Updatesnelheid"
         },
         "data_description": {
-          "update_speed": "Realtime volgt je meter: ongeveer 1s bij een DSMR 5-meter, 10s bij oudere meters. Kies Realtime voor de snelste regeling, Normaal voor de kleinste database. Zie de README voor schattingen van de opslag."
+          "update_speed": "Realtime volgt je meter: ongeveer 1s bij een DSMR 5-meter, 10s bij oudere meters. Zie de README voor schattingen van de opslag."
         }
       }
     }
