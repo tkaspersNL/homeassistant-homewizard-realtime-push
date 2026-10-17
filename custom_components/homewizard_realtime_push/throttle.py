@@ -16,7 +16,9 @@ LEVELS: tuple[float, ...] = (1.0, 2.0, 3.0, 5.0)
 
 WINDOW = 10.0
 LAG_THRESHOLD = 0.25
-CLEAN_PERIOD = 60.0
+# Three times the detection window: long enough to skip short pauses between
+# bursts of load, short enough that a rare slowdown doesn't linger.
+CLEAN_PERIOD = 30.0
 # A frame is late when its gap is this many times the usual telegram period.
 LATE_FACTOR = 2.0
 # One late frame is normal Wi-Fi jitter; more than that in a window is not.

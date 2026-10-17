@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Diagnostics show how old the published values are since they arrived (on average and at most), how often a late telegram held a value back, and how long telegrams take to arrive.
 - README explains what "realtime" means at each update speed, and that the full benefit needs a meter that sends a reading every second (DSMR 5).
 
+### Changed
+
+- The update speed dialog explains the automatic backoff: why it steps down, how it steps back up, and that it never goes faster than the speed you chose.
+- 2s is labelled as the default instead of recommended.
+- The update speed steps back up after 30s without problems instead of 60s, so a rare slowdown recovers sooner.
+- The diagnostic entity is renamed to *Current update interval* (nl: *Actueel update-interval*).
+
 ## [0.2.0] - 2026-10-16
 
 ### Changed

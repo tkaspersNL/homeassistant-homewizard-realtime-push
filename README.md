@@ -89,7 +89,7 @@ Change this under *Settings → Devices & services → HomeWizard Realtime Push 
 | Option | Interval | Notes |
 |---|---|---|
 | Realtime | every reading (~1s on DSMR 5) | fastest, highest load |
-| Very fast | 2s | **default**, recommended |
+| Very fast | 2s | **default** |
 | Fast | 3s | |
 | Normal | 5s | same rate as the official integration, but pushed |
 
@@ -113,7 +113,7 @@ The integration publishes the first telegram that arrives once the interval is u
 
 The meter's own processing and the Wi-Fi delay come on top of this, the same for every option. A meter that sends a telegram every 10s gets each telegram published as it arrives, at every speed, so the value can be up to 10s old.
 
-### Automatic backoff / throttling
+### Adaptive speed (throttling)
 
 The integration measures how late its own timer runs (event loop lag). It steps one level slower (1 → 2 → 3 → 5s) when, over 10s:
 
@@ -121,7 +121,7 @@ The integration measures how late its own timer runs (event loop lag). It steps 
 - telegrams arrive late at least twice (more than twice the usual gap), or
 - the WebSocket connection dropped.
 
-After 60s without any of these it steps one level back. It never goes faster than the option you chose. The *Effective update interval* entity shows the current interval and why.
+After 30s without any of these it steps one level back, and again after every further 30s, back to the option you chose. It never goes faster than that. The *Current update interval* entity shows the interval in use and why.
 
 ## Storage and load estimates
 
@@ -138,7 +138,7 @@ A Home Assistant state row takes roughly 200 bytes including indexes. Power, vol
 
 - Sizes are for 10 days of history. A single-phase connection has 3 phase entities instead of 9, so 4 entities in total.
 - Long-term statistics (5-minute and hourly) are the same size at every speed.
-- **Load:** a few state changes per second is light work for Home Assistant. The real cost comes from what listens to the entities: automations and template sensors that trigger on every change, and open dashboards that show them. Trigger only on what you need, and use the throttling above as a safety net.
+- **Load:** a few state changes per second is light work for Home Assistant. The real cost comes from what listens to the entities: automations and template sensors that trigger on every change, and open dashboards that show them. Trigger only on what you need, and use the adaptive speed above as a safety net.
 
 ### Optional: stop saving the fast entities' history
 
@@ -164,7 +164,7 @@ recorder:
       - sensor.*p1_meter_realtime_*
 ```
 
-If you already have a `recorder:` section, add the pattern to its `exclude`. The leading `*` also matches IDs with an area name in front. Adjust the pattern if you renamed the device. It also excludes the *Effective update interval* entity.
+If you already have a `recorder:` section, add the pattern to its `exclude`. The leading `*` also matches IDs with an area name in front. Adjust the pattern if you renamed the device. It also excludes the *Current update interval* entity.
 
 ## Entities
 
@@ -174,12 +174,12 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. The
 | Power phase 1/2/3 | W | no |
 | Voltage phase 1/2/3 | V | no |
 | Current phase 1/2/3 | A | no |
-| Effective update interval (diagnostic) | s | yes |
+| Current update interval (diagnostic) | s | yes |
 | Status (diagnostic) | OK / Problem | yes |
 
 - **Power** uses the same sign as the official integration: positive when you import from the grid, negative when you export.
 - Phase entities are only created for phases the meter reports. A single-phase connection gets phase 1 only.
-- **Effective update interval** changes only when the interval or connection changes, so it costs almost no storage. Its attributes:
+- **Current update interval** changes only when the interval or connection changes, so it costs almost no storage. Its attributes:
   - `configured_interval`: the option you chose, in seconds
   - `reason`: `configured`, `loop_lag`, `late_frames` or `reconnect`
   - `transport`: `websocket`, `polling` (fallback) or `connecting`
@@ -201,7 +201,7 @@ The integration helps in three ways:
   |---|---|---|
   | No measurements | 5 minutes | Nothing arrives from the meter. |
   | Not pushing measurements | 15 minutes | The WebSocket doesn't work; values come in by HTTPS polling instead. |
-  | Updates slower than configured | 30 minutes | The integration has slowed down for a long time (see [Automatic backoff / throttling](#automatic-backoff--throttling)). |
+  | Updates slower than configured | 30 minutes | The integration has slowed down for a long time (see [Adaptive speed](#adaptive-speed-throttling)). |
 
   When the meter rejects the token, Home Assistant asks you to authenticate again instead.
 
