@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Diagnostics show how old the published values are since they arrived (on average and at most), how often a late telegram held a value back, and how long telegrams take to arrive.
+- README explains what "realtime" means at each update speed, and that the full benefit needs a meter that sends a reading every second (DSMR 5).
 
 ## [0.2.0] - 2026-10-16
 

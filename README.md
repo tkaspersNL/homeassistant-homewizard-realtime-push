@@ -43,6 +43,7 @@ If the device is in an area, Home Assistant may put the area name in front of en
 ## Requirements
 
 - A HomeWizard **P1 meter** on **firmware 6 or newer** (API v2). Other HomeWizard devices are not supported.
+- To get the most out of it, a smart meter that sends a reading every second (DSMR 5). Older meters send one every 10s. The integration works with them, but a value can be up to 10s old at every speed, so it gains little over the official integration.
 - Physical access to the meter: setup needs one press of its button.
 - Home Assistant 2026.10 or newer.
 
@@ -92,7 +93,11 @@ Change this under *Settings → Devices & services → HomeWizard Realtime Push 
 | Fast | 3s | |
 | Normal | 5s | same rate as the official integration, but pushed |
 
-At every speed the entities show the **latest** reading, never an average.
+### What "realtime" means
+
+The connection is realtime at every speed: the meter pushes each reading over the WebSocket the moment it measures it. The update speed only sets how often Home Assistant takes a copy, and that copy is always the **latest** reading, never an average. Each value is published as soon as its reading arrives, so it is fresher than polling at the same rate, even at 5s (calculated; see [How old is the value?](#how-old-is-the-value)).
+
+The *Realtime* option is the one that passes on every reading.
 
 ### How old is the value?
 
