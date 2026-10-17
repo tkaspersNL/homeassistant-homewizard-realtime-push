@@ -16,7 +16,7 @@ from custom_components.homewizard_realtime_push.const import DOMAIN
 from .conftest import SERIAL, make_measurement
 
 POWER = "sensor.p1_meter_realtime_power"
-INTERVAL = "sensor.p1_meter_realtime_effective_update_interval"
+INTERVAL = "sensor.p1_meter_realtime_current_update_interval"
 PHASE_ENTITIES = [
     f"sensor.p1_meter_realtime_{kind}_phase_{phase}"
     for kind in ("power", "voltage", "current")

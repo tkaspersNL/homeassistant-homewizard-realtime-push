@@ -55,7 +55,7 @@
     "step": {
       "init": {
         "title": "Updatesnelheid",
-        "description": "Hoe vaak de entiteiten bijwerken. Sneller betekent meer statuswijzigingen: meer CPU, meer triggers voor automatiseringen en templates, en een snellere groei van de database. De integratie gaat vanzelf langzamer als Home Assistant het druk heeft. Wijzigingen gelden na een herlaadactie, die automatisch gebeurt.",
+        "description": "Hoe vaak het vermogen wordt bijgewerkt. Sneller geeft een versere meting, maar kost meer CPU en databaseopslag. Houdt Home Assistant het niet bij of hapert de verbinding, dan gaat de snelheid tijdelijk stapsgewijs omlaag (tot hooguit 5s) en herstelt die zich automatisch. Wijzigingen gaan direct in; herstarten is niet nodig.",
         "data": {
           "update_speed": "Updatesnelheid"
         },
@@ -69,7 +69,7 @@
     "update_speed": {
       "options": {
         "realtime": "Realtime: elke meting (~1s bij DSMR 5)",
-        "very_fast": "Zeer snel: 2s (aanbevolen)",
+        "very_fast": "Zeer snel: 2s (standaard)",
         "fast": "Snel: 3s",
         "normal": "Normaal: 5s (zoals de officiële integratie)"
       }
@@ -104,7 +104,7 @@
         "name": "Stroom fase {phase}"
       },
       "effective_interval": {
-        "name": "Effectief update-interval",
+        "name": "Actueel update-interval",
         "state_attributes": {
           "configured_interval": {
             "name": "Ingesteld interval"
@@ -149,7 +149,7 @@
     },
     "throttled": {
       "title": "{name} werkt langzamer bij dan ingesteld",
-      "description": "Al minstens {minutes} minuten werkt de integratie langzamer bij dan de gekozen updatesnelheid, omdat Home Assistant het druk heeft, metingen te laat binnenkomen of de verbinding steeds wegvalt. De entiteit *Effectief update-interval* toont de reden.\n\nZoek naar zware automatiseringen of integraties, of kies een lagere updatesnelheid. Deze melding verdwijnt vanzelf zodra de ingestelde snelheid weer gehaald wordt."
+      "description": "Al minstens {minutes} minuten werkt de integratie langzamer bij dan de gekozen updatesnelheid, omdat Home Assistant het druk heeft, metingen te laat binnenkomen of de verbinding steeds wegvalt. De entiteit *Actueel update-interval* toont de reden.\n\nZoek naar zware automatiseringen of integraties, of kies een lagere updatesnelheid. Deze melding verdwijnt vanzelf zodra de ingestelde snelheid weer gehaald wordt."
     }
   }
 }

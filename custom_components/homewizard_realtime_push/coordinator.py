@@ -10,6 +10,7 @@ from homeassistant.const import CONF_TOKEN, EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util import dt as dt_util
 from homewizard_energy import HomeWizardEnergyV2
 from homewizard_energy.models import Device, Measurement
 
@@ -27,6 +28,7 @@ from .const import (
     Problem,
     UpdateSpeed,
 )
+from .freshness import Freshness
 from .throttle import Throttle
 
 type HomeWizardRealtimeConfigEntry = ConfigEntry[RealtimeHub]
@@ -57,6 +59,7 @@ class RealtimeHub:
         now = self._clock()
         speed = UpdateSpeed(entry.options.get(CONF_UPDATE_SPEED, DEFAULT_UPDATE_SPEED))
         self.throttle = Throttle[Measurement](UPDATE_SPEED_INTERVAL[speed], now)
+        self.freshness = Freshness()
         self._last_frame = now
         self._timer: asyncio.TimerHandle | None = None
         self._hold: asyncio.TimerHandle | None = None
@@ -156,6 +159,10 @@ class RealtimeHub:
         gap = now - self._last_frame
         self._last_frame = now
         publish_now = self.throttle.offer(measurement, now)
+        if (sent := measurement.timestamp) is not None:
+            if sent.tzinfo is None:
+                sent = sent.replace(tzinfo=dt_util.get_default_time_zone())
+            self.freshness.telegram_delay((dt_util.utcnow() - sent).total_seconds())
         if not self.available:
             LOGGER.info("Measurements from %s are back after %.0fs", self.api.host, gap)
             self.available = True
@@ -293,11 +300,14 @@ class RealtimeHub:
     def _publish_held(self) -> None:
         # The next frame is late; don't keep the held one back any longer.
         self._hold = None
-        self._publish_pending()
+        self._publish_pending(held=True)
 
-    def _publish_pending(self) -> None:
+    def _publish_pending(self, held: bool = False) -> None:
         self._cancel_hold()
-        if (latest := self.throttle.take(self._clock())) is not None:
+        now = self._clock()
+        if (latest := self.throttle.take(now)) is not None:
+            # The held frame is always the latest one to arrive.
+            self.freshness.published(now, self._last_frame, held)
             self._publish(latest)
 
     def _cancel_hold(self) -> None:
@@ -312,6 +322,7 @@ class RealtimeHub:
         # Never publish a frame from before the gap.
         self.throttle.discard()
         self._cancel_hold()
+        self.freshness.interrupted()
         self._notify(self._listeners)
         self._notify(self._status_listeners)
 

@@ -1,0 +1,155 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "HomeWizard Realtime Push einrichten",
+        "description": "Gib die IP-Adresse deines HomeWizard P1-Meters ein. Es benötigt Firmware 6 oder neuer (API v2).",
+        "data": {
+          "ip_address": "IP-Adresse"
+        },
+        "data_description": {
+          "ip_address": "Die IP-Adresse des P1-Meters, wie sie in der HomeWizard-App oder deinem Router angezeigt wird."
+        }
+      },
+      "discovery_confirm": {
+        "title": "HomeWizard P1-Meter gefunden",
+        "description": "{name} unter {host} für Echtzeit-Updates einrichten? Dies läuft neben der offiziellen HomeWizard-Integration und ersetzt sie nicht."
+      },
+      "authorize": {
+        "title": "Drücke die Taste an deinem P1-Meter",
+        "description": "Drücke einmal die Taste am P1-Meter und wähle dann Senden. Home Assistant wartet bis zu {wait}s auf den Tastendruck und holt sich dann ein eigenes Zugriffstoken vom Meter."
+      },
+      "reauth_confirm": {
+        "title": "Neues Zugriffstoken erforderlich",
+        "description": "Das P1-Meter akzeptiert das gespeicherte Token nicht mehr, zum Beispiel weil es in der HomeWizard-App entfernt wurde. Wähle Senden, um ein neues anzufordern; dazu musst du die Taste am Meter drücken."
+      },
+      "reconfigure": {
+        "title": "IP-Adresse ändern",
+        "description": "Gib die neue IP-Adresse desselben P1-Meters ein. Das gespeicherte Token wird weiterverwendet.",
+        "data": {
+          "ip_address": "IP-Adresse"
+        },
+        "data_description": {
+          "ip_address": "Die neue IP-Adresse des P1-Meters."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unter dieser Adresse ist kein HomeWizard-Gerät mit API v2 erreichbar. Prüfe die IP-Adresse und ob das Gerät online ist.",
+      "button_not_pressed": "Es wurde nicht rechtzeitig ein Tastendruck erkannt. Drücke die Taste am P1-Meter und wähle erneut Senden.",
+      "token_rejected": "Das Gerät unter dieser Adresse akzeptiert das gespeicherte Token nicht. Ist es dasselbe P1-Meter?"
+    },
+    "abort": {
+      "already_configured": "Gerät ist bereits konfiguriert",
+      "cannot_connect": "Verbindung fehlgeschlagen",
+      "firmware_too_old": "Dieses Gerät unterstützt nur die alte v1-API. Aktualisiere das P1-Meter auf Firmware 6 oder neuer oder nutze die offizielle HomeWizard-Integration.",
+      "invalid_discovery_parameters": "Das gefundene Gerät hat keinen Produkttyp und keine Seriennummer gemeldet.",
+      "not_p1_meter": "Diese Integration unterstützt nur das HomeWizard P1-Meter. Nutze für andere Geräte die offizielle HomeWizard-Integration.",
+      "reauth_successful": "Die erneute Authentifizierung war erfolgreich",
+      "reconfigure_successful": "Die Neukonfiguration war erfolgreich",
+      "wrong_device": "Das ist ein anderes P1-Meter als das ursprünglich eingerichtete."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aktualisierungsrate",
+        "description": "Wie oft die Leistung aktualisiert wird. Schneller liefert einen frischeren Messwert, kostet aber mehr CPU und Datenbankspeicher. Kommt Home Assistant nicht hinterher oder stockt die Verbindung, wird die Aktualisierung vorübergehend schrittweise langsamer (bis höchstens 5s) und erholt sich automatisch. Änderungen gelten sofort; ein Neustart ist nicht nötig.",
+        "data": {
+          "update_speed": "Aktualisierungsrate"
+        },
+        "data_description": {
+          "update_speed": "Echtzeit folgt deinem Zähler: etwa 1s bei einem DSMR-5-Zähler, 10s bei älteren Zählern. Speicherschätzungen findest du in der README."
+        }
+      }
+    }
+  },
+  "selector": {
+    "update_speed": {
+      "options": {
+        "realtime": "Echtzeit: jede Messung (~1s bei DSMR 5)",
+        "very_fast": "Sehr schnell: 2s (Standard)",
+        "fast": "Schnell: 3s",
+        "normal": "Normal: 5s (wie die offizielle Integration)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "status": {
+        "name": "Status",
+        "state_attributes": {
+          "reason": {
+            "name": "Grund",
+            "state": {
+              "no_data": "Keine Messwerte",
+              "token_rejected": "Token abgelehnt"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Leistung"
+      },
+      "power_phase": {
+        "name": "Leistung Phase {phase}"
+      },
+      "voltage_phase": {
+        "name": "Spannung Phase {phase}"
+      },
+      "current_phase": {
+        "name": "Strom Phase {phase}"
+      },
+      "effective_interval": {
+        "name": "Aktuelles Aktualisierungsintervall",
+        "state_attributes": {
+          "configured_interval": {
+            "name": "Eingestelltes Intervall"
+          },
+          "reason": {
+            "name": "Grund",
+            "state": {
+              "configured": "Eingestellte Rate",
+              "loop_lag": "Home Assistant ist ausgelastet",
+              "late_frames": "Messwerte kommen verspätet an",
+              "reconnect": "Verbindung unterbrochen"
+            }
+          },
+          "transport": {
+            "name": "Übertragung",
+            "state": {
+              "connecting": "Verbindung wird hergestellt",
+              "websocket": "WebSocket-Push",
+              "polling": "HTTPS-Abfrage (Ausweichlösung)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Das P1-Meter unter {host} ist nicht erreichbar."
+    },
+    "token_rejected": {
+      "message": "Das P1-Meter hat das Zugriffstoken abgelehnt."
+    }
+  },
+  "issues": {
+    "no_data": {
+      "title": "Keine Messwerte von {name}",
+      "description": "Das P1-Meter hat seit mindestens {minutes} Minuten keine Messwerte gesendet, und seine Echtzeit-Entitäten sind nicht verfügbar. Alles, was einen Heimspeicher oder Verbraucher anhand dieser Entitäten steuert, arbeitet jetzt ohne Netzdaten.\n\nPrüfe, ob das Meter Strom hat und in der HomeWizard-App online ist und ob Home Assistant es im Netzwerk erreicht. Diese Meldung verschwindet von selbst, sobald wieder Messwerte ankommen."
+    },
+    "polling_fallback": {
+      "title": "{name} sendet keine Push-Messwerte",
+      "description": "Seit mindestens {minutes} Minuten funktioniert der WebSocket zum P1-Meter nicht, daher fragt die Integration das Meter stattdessen per HTTPS ab. Es kommen weiterhin Werte an, aber weniger effizient.\n\nEin Neustart des Meters hilft meistens. Passiert es immer wieder, eröffne ein Issue auf GitHub mit den Diagnosedaten und Debug-Logs. Diese Meldung verschwindet von selbst, sobald der WebSocket wieder funktioniert."
+    },
+    "throttled": {
+      "title": "{name} aktualisiert langsamer als eingestellt",
+      "description": "Seit mindestens {minutes} Minuten aktualisiert die Integration langsamer als die gewählte Aktualisierungsrate, weil Home Assistant ausgelastet ist, Messwerte verspätet ankommen oder die Verbindung immer wieder abbricht. Die Entität *Aktuelles Aktualisierungsintervall* zeigt den Grund.\n\nSuche nach aufwendigen Automationen oder Integrationen oder wähle eine langsamere Aktualisierungsrate. Diese Meldung verschwindet von selbst, sobald die eingestellte Rate wieder erreicht wird."
+    }
+  }
+}
