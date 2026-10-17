@@ -25,6 +25,7 @@ async def test_diagnostics_are_redacted(
     assert "loop_lag_s" in result["throttle"]
     assert "frame_interval_s" in result["throttle"]
     assert result["hub"]["available"] is True
+    assert result["freshness"]["publishes"] == 0
     assert result["measurement"]["power_w"] == -543
 
     text = repr(result)

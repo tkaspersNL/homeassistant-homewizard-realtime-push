@@ -262,7 +262,7 @@ A Home Assistant restart doesn't count as a problem either: while Home Assistant
 - **Setup says no button press was detected.** Press the button once, then select Submit within 30s.
 - **Setup says the firmware is too old.** The meter only speaks API v1. Update it through the HomeWizard app, or keep using the official integration.
 
-**Diagnostics:** *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Download diagnostics*. Besides the settings and the latest measurement, it shows the live event loop lag and the time between telegrams. The token, serial number and IP address are redacted.
+**Diagnostics:** *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Download diagnostics*. Besides the settings and the latest measurement, it shows the live event loop lag, the time between telegrams, and how old the published values are since they arrived (on average and at most, since the last restart). The telegram delay compares the arrival time with the meter's clock, so it includes any offset of that clock. The token, serial number and IP address are redacted.
 
 **Debug logs:**
 

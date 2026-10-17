@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Generator
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.util import dt as dt_util
 from homewizard_energy.models import Device
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -382,3 +384,39 @@ async def test_stop_clears_issues(hass: HomeAssistant, make_hub, clock) -> None:
     hub.async_stop()
     assert issue(hass, hub, Issue.NO_DATA) is None
     assert hub.issues == []
+
+
+async def test_freshness_follows_publishes(make_hub, clock) -> None:
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    frame(hub, clock, 2, 10)
+    frame(hub, clock, 1, 20)
+    # Late: the held frame is published 1.5s after it arrived.
+    clock.now += 1.5
+    hub._hold.cancel()
+    hub._publish_held()
+    frame(hub, clock, 0.5, 30)
+    clock.now += 1
+    hub._hold.cancel()
+    hub._publish_held()
+
+    summary = hub.freshness.as_dict()
+    assert summary["publishes"] == 3
+    assert summary["held_publishes"] == 2
+    # Spans of 2.5s from age 0 and 1.5s from age 1.5s.
+    assert summary["max_age_s"] == 3.0
+
+    hub._set_unavailable(clock.now)
+    clock.now += 60
+    frame(hub, clock, 0, 40)
+    assert hub.freshness.as_dict()["max_age_s"] == 3.0
+
+
+async def test_telegram_delay_from_naive_and_aware_timestamps(make_hub) -> None:
+    hub = make_hub(UpdateSpeed.REALTIME)
+    sent = dt_util.now() - timedelta(seconds=0.4)
+    hub.on_measurement(
+        make_measurement(timestamp=sent.replace(tzinfo=None).isoformat())
+    )
+    hub.on_measurement(make_measurement(timestamp=sent.isoformat()))
+    delay = hub.freshness.as_dict()["telegram_delay_s"]
+    assert 0.3 < delay < 1.5

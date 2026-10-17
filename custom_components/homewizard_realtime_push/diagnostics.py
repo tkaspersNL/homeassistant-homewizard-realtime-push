@@ -49,6 +49,7 @@ async def async_get_config_entry_diagnostics(
                 "loop_lag_s": throttle.loop_lag,
                 "frame_interval_s": throttle.frame_period,
             },
+            "freshness": hub.freshness.as_dict(),
             "measurement": {
                 key: value
                 for key, value in asdict(measurement).items()
