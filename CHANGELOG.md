@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An info line in the log when a repair issue clears because the problem is over.
+
 ## [0.3.0] - 2026-10-17
 
 ### Added

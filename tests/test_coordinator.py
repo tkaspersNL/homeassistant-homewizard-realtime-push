@@ -326,6 +326,7 @@ async def test_no_data_issue_after_five_minutes(
     assert hub.problem is None
     assert issue(hass, hub, Issue.NO_DATA) is None
     assert "are back after 312s" in caplog.text
+    assert "no_data is over; repair issue cleared" in caplog.text
 
 
 async def test_no_data_issue_skipped_when_token_rejected(
@@ -357,6 +358,7 @@ async def test_polling_issue_after_fifteen_minutes(
     hub.on_transport(Transport.WEBSOCKET)
     assert "streaming again" in caplog.text
     assert issue(hass, hub, Issue.POLLING_FALLBACK) is None
+    assert "polling_fallback is over; repair issue cleared" in caplog.text
 
 
 async def test_throttled_issue_after_thirty_minutes(
@@ -376,7 +378,9 @@ async def test_throttled_issue_after_thirty_minutes(
     assert issue(hass, hub, Issue.THROTTLED) is None
 
 
-async def test_stop_clears_issues(hass: HomeAssistant, make_hub, clock) -> None:
+async def test_stop_clears_issues(
+    hass: HomeAssistant, make_hub, clock, caplog: pytest.LogCaptureFixture
+) -> None:
     hub = make_hub()
     tick(hub, clock, 12)
     tick(hub, clock, ISSUE_AFTER[Issue.NO_DATA])
@@ -384,6 +388,8 @@ async def test_stop_clears_issues(hass: HomeAssistant, make_hub, clock) -> None:
     hub.async_stop()
     assert issue(hass, hub, Issue.NO_DATA) is None
     assert hub.issues == []
+    # Unloading is not the problem ending, so it is not logged as such.
+    assert "repair issue cleared" not in caplog.text
 
 
 async def test_freshness_follows_publishes(make_hub, clock) -> None:

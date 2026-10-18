@@ -126,7 +126,7 @@ class RealtimeHub:
             self._unsub_stop()
             self._unsub_stop = None
         for issue in Issue:
-            self._clear_issue(issue)
+            self._clear_issue(issue, log=False)
 
     @callback
     def _async_hass_stopping(self, _event: Event) -> None:
@@ -277,10 +277,14 @@ class RealtimeHub:
                 },
             )
 
-    def _clear_issue(self, issue: Issue) -> None:
+    def _clear_issue(self, issue: Issue, *, log: bool = True) -> None:
         if issue in self._raised:
             self._raised.discard(issue)
             ir.async_delete_issue(self.hass, DOMAIN, self._issue_id(issue))
+            if log:
+                LOGGER.info(
+                    "%s: %s is over; repair issue cleared", self.api.host, issue
+                )
 
     def _issue_id(self, issue: Issue) -> str:
         return f"{issue}_{self.entry.entry_id}"
