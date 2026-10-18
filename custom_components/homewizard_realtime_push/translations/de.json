@@ -45,6 +45,7 @@
       "cannot_connect": "Verbindung fehlgeschlagen",
       "firmware_too_old": "Dieses Gerät unterstützt nur die alte v1-API. Aktualisiere das P1-Meter auf Firmware 6 oder neuer oder nutze die offizielle HomeWizard-Integration.",
       "invalid_discovery_parameters": "Das gefundene Gerät hat keinen Produkttyp und keine Seriennummer gemeldet.",
+      "ipv6_not_supported": "IPv6 wird nicht unterstützt. Das Meter wird wieder gefunden, sobald es eine IPv4-Adresse meldet.",
       "not_p1_meter": "Diese Integration unterstützt nur das HomeWizard P1-Meter. Nutze für andere Geräte die offizielle HomeWizard-Integration.",
       "reauth_successful": "Die erneute Authentifizierung war erfolgreich",
       "reconfigure_successful": "Die Neukonfiguration war erfolgreich",

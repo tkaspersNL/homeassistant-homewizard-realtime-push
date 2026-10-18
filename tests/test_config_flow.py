@@ -283,6 +283,21 @@ async def test_zeroconf_updates_ip_of_configured_entry(
     assert mock_config_entry.data[CONF_IP_ADDRESS] == "192.0.2.30"
 
 
+async def test_zeroconf_ignores_ipv6(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    mock_config_entry.add_to_hass(hass)
+    info = zeroconf_info()
+    info.ip_address = ip_address("fd00::1")
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_ZEROCONF}, data=info
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "ipv6_not_supported"
+    # A working IPv4 address must survive an IPv6-only announcement.
+    assert mock_config_entry.data[CONF_IP_ADDRESS] == HOST
+
+
 @pytest.mark.usefixtures("v2_api")
 async def test_reauth(hass: HomeAssistant, mock_config_entry: MockConfigEntry) -> None:
     mock_config_entry.add_to_hass(hass)

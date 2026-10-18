@@ -90,6 +90,11 @@ class HomeWizardRealtimeConfigFlow(ConfigFlow, domain=DOMAIN):
         self, discovery_info: ZeroconfServiceInfo
     ) -> ConfigFlowResult:
         """Handle a device found on the network."""
+        # The meter can announce itself with only an IPv6 address while it
+        # rejoins the network; the API client can't use one, and storing it
+        # would replace a working IPv4 address.
+        if discovery_info.ip_address.version == 6:
+            return self.async_abort(reason="ipv6_not_supported")
         properties = discovery_info.properties
         if any(
             key not in properties
