@@ -19,7 +19,7 @@ from typing import Any, Protocol
 
 import aiohttp
 from homewizard_energy import HomeWizardEnergyV2
-from homewizard_energy.errors import RequestError, UnauthorizedError
+from homewizard_energy.errors import HomeWizardEnergyException, UnauthorizedError
 from homewizard_energy.models import Measurement
 from homewizard_energy.v2.cacert import CACERT
 from mashumaro.exceptions import InvalidFieldValue, MissingField
@@ -186,12 +186,23 @@ class RealtimeClient:
     def _start_polling(self) -> None:
         if self._poll_task is None or self._poll_task.done():
             self._poll_task = asyncio.create_task(self._poll())
+            self._poll_task.add_done_callback(self._poll_done)
         self._set_transport(Transport.POLLING)
+
+    def _poll_done(self, task: asyncio.Task[None]) -> None:
+        if not task.cancelled() and (err := task.exception()) is not None:
+            _LOGGER.error(
+                "Polling %s stopped unexpectedly", self._api.host, exc_info=err
+            )
 
     async def _stop_polling(self) -> None:
         if (task := self._poll_task) is None:
             return
         self._poll_task = None
+        # Awaiting a poll that already failed would raise its error here and
+        # end the stream with it; _poll_done has logged it.
+        if task.done():
+            return
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
@@ -205,7 +216,15 @@ class RealtimeClient:
                 self._auth_failed.set()
                 self._listener.on_auth_failed()
                 return
-            except RequestError as err:
+            # Includes answers that are not a measurement, such as an error
+            # page while the meter boots.
+            except (
+                HomeWizardEnergyException,
+                InvalidFieldValue,
+                MissingField,
+                TypeError,
+                ValueError,
+            ) as err:
                 _LOGGER.debug("Polling %s failed: %r", self._api.host, err)
             else:
                 self._listener.on_measurement(measurement)

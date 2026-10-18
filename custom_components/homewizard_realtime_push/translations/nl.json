@@ -61,7 +61,7 @@
           "update_speed": "Updatesnelheid"
         },
         "data_description": {
-          "update_speed": "Realtime volgt je meter: ongeveer 1s bij een DSMR 5-meter, 10s bij oudere meters. Zie de README voor schattingen van de opslag."
+          "update_speed": "Realtime volgt je meter: ongeveer 1s bij een DSMR 5-meter, 10s bij oudere meters. Zie de README voor hoeveel opslag elke snelheid gebruikt."
         }
       }
     }

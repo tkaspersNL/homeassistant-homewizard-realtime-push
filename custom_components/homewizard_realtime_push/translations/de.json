@@ -61,7 +61,7 @@
           "update_speed": "Aktualisierungsrate"
         },
         "data_description": {
-          "update_speed": "Echtzeit folgt deinem Zähler: etwa 1s bei einem DSMR-5-Zähler, 10s bei älteren Zählern. Speicherschätzungen findest du in der README."
+          "update_speed": "Echtzeit folgt deinem Zähler: etwa 1s bei einem DSMR-5-Zähler, 10s bei älteren Zählern. Wie viel Speicher jede Geschwindigkeit braucht, steht in der README."
         }
       }
     }

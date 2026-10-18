@@ -168,6 +168,8 @@ class RealtimeHub:
             self.available = True
             self._since[Issue.NO_DATA] = None
             self._clear_issue(Issue.NO_DATA)
+            if self.transport is Transport.POLLING:
+                self._since[Issue.POLLING_FALLBACK] = now
             publish_now = True
             self._notify(self._status_listeners)
         if publish_now:
@@ -193,7 +195,8 @@ class RealtimeHub:
         LOGGER.debug("Transport for %s is now %s", self.api.host, transport)
 
         if transport is Transport.POLLING:
-            if self._since[Issue.POLLING_FALLBACK] is None:
+            # Only polling that delivers counts; an outage is the no-data issue.
+            if self.available and self._since[Issue.POLLING_FALLBACK] is None:
                 self._since[Issue.POLLING_FALLBACK] = now
         else:
             self._since[Issue.POLLING_FALLBACK] = None
@@ -323,6 +326,9 @@ class RealtimeHub:
         if self.available:
             self._since[Issue.NO_DATA] = now
         self.available = False
+        # The fallback issue says values still arrive, so it ends with the data.
+        self._since[Issue.POLLING_FALLBACK] = None
+        self._clear_issue(Issue.POLLING_FALLBACK, log=False)
         # Never publish a frame from before the gap.
         self.throttle.discard()
         self._cancel_hold()

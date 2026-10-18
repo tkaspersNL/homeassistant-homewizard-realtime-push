@@ -313,6 +313,43 @@ async def test_polling_survives_request_errors() -> None:
 
 
 @pytest.mark.usefixtures("no_backoff")
+@pytest.mark.parametrize(
+    "poll_error",
+    [
+        # The library parses whatever the meter answers, also an error page
+        # while it boots.
+        pytest.param(ValueError("Expecting value"), id="unreadable-response"),
+        pytest.param(RuntimeError("unexpected"), id="unexpected-error"),
+    ],
+)
+async def test_failed_poll_does_not_stop_the_stream(
+    poll_error: Exception, caplog: pytest.LogCaptureFixture
+) -> None:
+    async def refuse(ws: web.WebSocketResponse) -> None:
+        await ws.close()
+
+    async def stream(ws: web.WebSocketResponse) -> None:
+        await device.handshake(ws)
+        await ws.send_json({"type": "measurement", "data": {"power_w": -5}})
+        await ws.receive()
+
+    device = FakeDevice([refuse, stream])
+    recorder = Recorder()
+    api = make_api(poll_error, *[Measurement.from_dict({"power_w": 9})] * 50)
+    task, server, session = await start(device, api, recorder)
+    try:
+        await recorder.wait_for(
+            lambda: any(m.power_w == -5 for m in recorder.measurements)
+        )
+        await asyncio.sleep(0.05)
+        assert not task.done()
+    finally:
+        await stop(task, server, session)
+
+    assert recorder.transports == [Transport.POLLING, Transport.WEBSOCKET]
+
+
+@pytest.mark.usefixtures("no_backoff")
 async def test_unreachable_device_polls() -> None:
     recorder = Recorder()
     api = make_api()

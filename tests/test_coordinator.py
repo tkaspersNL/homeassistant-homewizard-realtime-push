@@ -361,6 +361,47 @@ async def test_polling_issue_after_fifteen_minutes(
     assert "polling_fallback is over; repair issue cleared" in caplog.text
 
 
+async def test_polling_issue_only_counts_while_data_arrives(
+    hass: HomeAssistant, make_hub, clock
+) -> None:
+    hub = make_hub()
+    hub.on_transport(Transport.WEBSOCKET)
+    # The meter goes offline: the WebSocket drops and polling gets nothing.
+    hub.on_transport(Transport.POLLING)
+    for _ in range(int(ISSUE_AFTER[Issue.POLLING_FALLBACK] / 5) + 1):
+        tick(hub, clock, 5)
+    # The outage is the no-data issue; polling is not delivering anything.
+    assert issue(hass, hub, Issue.NO_DATA) is not None
+    assert issue(hass, hub, Issue.POLLING_FALLBACK) is None
+
+    # Values come back by polling: the fallback clock starts only now.
+    frame(hub, clock, 1, 10)
+    hub._tick(clock.now)
+    assert issue(hass, hub, Issue.POLLING_FALLBACK) is None
+    for _ in range(int(ISSUE_AFTER[Issue.POLLING_FALLBACK] / 5)):
+        frame(hub, clock, 5, 10)
+        hub._tick(clock.now)
+    assert issue(hass, hub, Issue.POLLING_FALLBACK) is not None
+
+
+async def test_polling_issue_clears_when_data_stops(
+    hass: HomeAssistant, make_hub, clock, caplog: pytest.LogCaptureFixture
+) -> None:
+    hub = make_hub()
+    hub.on_transport(Transport.WEBSOCKET)
+    hub.on_transport(Transport.POLLING)
+    for _ in range(int(ISSUE_AFTER[Issue.POLLING_FALLBACK] / 5)):
+        frame(hub, clock, 5, 10)
+        hub._tick(clock.now)
+    assert issue(hass, hub, Issue.POLLING_FALLBACK) is not None
+
+    # The fallback issue says values still arrive, so it ends with the data.
+    tick(hub, clock, 20)
+    assert hub.problem is Problem.NO_DATA
+    assert issue(hass, hub, Issue.POLLING_FALLBACK) is None
+    assert "polling_fallback is over" not in caplog.text
+
+
 async def test_throttled_issue_after_thirty_minutes(
     hass: HomeAssistant, make_hub, clock
 ) -> None:
