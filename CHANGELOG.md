@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The README's known limitations say that only IPv4 addresses work, and explain more clearly that one update speed applies to all entities.
+
 ## [0.3.2] - 2026-10-18
 
 ### Changed
