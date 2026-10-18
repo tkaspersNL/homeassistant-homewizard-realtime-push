@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The README shows measured storage figures instead of estimates, and explains setup and throttling more clearly.
 
+### Fixed
+
+- An answer from the meter that is not a measurement, for example while it boots, no longer stops the integration. Before, the next WebSocket reconnect could end all updates until Home Assistant was restarted.
+
 ## [0.3.1] - 2026-10-18
 
 ### Added
