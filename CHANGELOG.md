@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - An info line in the log when a repair issue clears because the problem is over.
 
+### Changed
+
+- The safety example in the README also pauses and resumes when the integration reloads during an outage. Before, a reload in the middle of an outage kept it from doing either.
+
 ### Fixed
 
 - A discovery with only an IPv6 address no longer replaces the meter's IPv4 address. This happened after a router restart, while the meter rejoined the network: the integration reloaded and kept retrying an address it can't use until the meter announced its IPv4 address again.

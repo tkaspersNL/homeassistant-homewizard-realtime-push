@@ -213,12 +213,11 @@ mode: restart
 triggers:
   - trigger: state
     entity_id: binary_sensor.p1_meter_realtime_status
-    to: "on"
+    not_to: "off"
     for: "00:00:30"
     id: stopped
   - trigger: state
     entity_id: binary_sensor.p1_meter_realtime_status
-    from: "on"
     to: "off"
     id: back
 actions:
@@ -235,7 +234,7 @@ actions:
               title: Battery control paused
               message: >-
                 No grid data from the P1 meter
-                ({{ state_attr('binary_sensor.p1_meter_realtime_status', 'reason') }}).
+                ({{ state_attr('binary_sensor.p1_meter_realtime_status', 'reason') or 'unavailable' }}).
       - conditions:
           - condition: trigger
             id: back
@@ -248,6 +247,8 @@ actions:
               title: Battery control resumed
               message: Grid data from the P1 meter is back.
 ```
+
+The triggers are broad on purpose. While the integration reloads, for example when the meter gets a new IP address, Status is briefly *unavailable* instead of *Problem*. `not_to: "off"` counts that as part of the outage, and `to: "off"` without `from` resumes after it. The trade-off: the resume step also runs when nothing was paused, for example after you change the update speed. It then turns the controller on even if you had switched it off yourself. Add a condition if that matters to you.
 
 A Home Assistant restart doesn't count as a problem either: while Home Assistant shuts down, the entities keep their last state instead of reporting a gap. Polling and slowing down don't set Status to *Problem*: the data is still fresh then, and pausing for that would do more harm than good.
 
@@ -316,6 +317,12 @@ python -m venv .venv
 - Branches follow Gitflow: `main` holds releases, work happens on `develop` and `feature/*` branches.
 - Every change comes with tests, and the checks above must pass.
 - User-facing changes get a line under *Unreleased* in [CHANGELOG.md](CHANGELOG.md).
+
+## Support
+
+If this integration is useful to you, a coffee is a welcome thank you.
+
+<a href="https://ko-fi.com/tkaspersnl"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
 
 ## Disclaimer
 
