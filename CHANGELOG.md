@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - An answer from the meter that is not a measurement, for example while it boots, no longer stops the integration. Before, the next WebSocket reconnect could end all updates until Home Assistant was restarted.
+- During an outage longer than 15 minutes, the *not pushing measurements* repair issue no longer appears next to *no measurements*. It said that values still arrive by polling, which was not true.
 
 ## [0.3.1] - 2026-10-18
 
