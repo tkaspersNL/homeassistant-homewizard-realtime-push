@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - An info line in the log when a repair issue clears because the problem is over.
 
+### Fixed
+
+- A discovery with only an IPv6 address no longer replaces the meter's IPv4 address. This happened after a router restart, while the meter rejoined the network: the integration reloaded and kept retrying an address it can't use until the meter announced its IPv4 address again.
+
 ## [0.3.0] - 2026-10-17
 
 ### Added

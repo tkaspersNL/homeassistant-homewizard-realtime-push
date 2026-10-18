@@ -45,6 +45,7 @@
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "firmware_too_old": "This device only supports the old v1 API. Update the P1 meter to firmware 6 or newer, or use the official HomeWizard integration.",
       "invalid_discovery_parameters": "The discovered device did not report a product type and serial number.",
+      "ipv6_not_supported": "IPv6 is not supported. The meter is found again once it announces an IPv4 address.",
       "not_p1_meter": "This integration supports the HomeWizard P1 meter only. Use the official HomeWizard integration for other devices.",
       "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
       "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",

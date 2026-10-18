@@ -45,6 +45,7 @@
       "cannot_connect": "Kan geen verbinding maken",
       "firmware_too_old": "Dit apparaat ondersteunt alleen de oude v1-API. Werk de P1-meter bij naar firmware 6 of nieuwer, of gebruik de officiële HomeWizard-integratie.",
       "invalid_discovery_parameters": "Het gevonden apparaat gaf geen producttype en serienummer door.",
+      "ipv6_not_supported": "IPv6 wordt niet ondersteund. De meter wordt opnieuw gevonden zodra hij een IPv4-adres meldt.",
       "not_p1_meter": "Deze integratie ondersteunt alleen de HomeWizard P1-meter. Gebruik voor andere apparaten de officiële HomeWizard-integratie.",
       "reauth_successful": "Herauthenticatie geslaagd",
       "reconfigure_successful": "Herconfiguratie geslaagd",
