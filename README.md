@@ -11,7 +11,7 @@
 [![Tests](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml/badge.svg)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Fast power readings from a HomeWizard P1 meter in Home Assistant, pushed by the meter over its local API v2 WebSocket instead of polled. You choose an update rate between every telegram (about 1s) and 5s, and the integration slows down on its own when Home Assistant is busy.
+Fast power readings from a HomeWizard P1 meter in Home Assistant, pushed by the meter over its local API v2 WebSocket instead of polled. You choose an update rate between every telegram (about 1s) and 5s, with automatic throttling if Home Assistant can't keep up.
 
 It is built for things that need to react quickly to the grid connection, such as a home battery controller or a load balancer for an EV charger. It runs **next to** the official HomeWizard integration and does not replace it.
 
@@ -23,6 +23,7 @@ It is built for things that need to react quickly to the grid connection, such a
 - **Fresh data.** A value is about as old as the telegram (1s at most on a DSMR 5 meter), not "up to one poll interval".
 - **Current API.** API v2 is HomeWizard's current local API: it needs a token and is encrypted (HTTPS/WSS). The old v1 API is open plain HTTP.
 - **Resilient.** It reconnects with backoff, falls back to HTTPS polling while the WebSocket is down, throttles its update rate when Home Assistant is busy, and turns its entities unavailable when data stops. An automation never acts on a frozen value.
+- **Easy setup.** The integration auto-discovers the meter on your network. You press the button on the HomeWizard P1 meter once to authorize it; there is no token to copy and usually no IP address to enter. We do recommend giving the meter a fixed IP address for stability, but it will work with a dynamic one too.
 
 The official integration polls every 5s. Calling `homeassistant.update_entity` from an automation does not make it faster, because refresh requests are debounced with a 10s cooldown.
 
@@ -38,7 +39,7 @@ Keep the official integration for history, statistics and the Energy dashboard. 
 
 The fast entities live on their own device, named after the meter with "Realtime" added (for example *P1 Meter Realtime*). Entity IDs therefore do not clash with the official ones, for example `sensor.p1_meter_realtime_power` next to `sensor.p1_meter_power`.
 
-If the device is in an area, Home Assistant may put the area name in front of entity IDs, for example `binary_sensor.hallway_p1_meter_realtime_status`. The examples below use IDs without an area; check yours under *Settings → Devices & services → Entities*.
+If the device is in an area, Home Assistant may put the area name in front of entity IDs, for example `binary_sensor.utility_room_p1_meter_realtime_status`. The examples below use IDs without an area; check yours under *Settings → Devices & services → Entities*.
 
 ## Requirements
 
@@ -72,7 +73,7 @@ The meter is usually discovered automatically. Otherwise add **HomeWizard Realti
 2. Press the button on the P1 meter once, then select **Submit**. Home Assistant waits up to 30s for the press.
 3. The integration gets its own access token from the meter. It shows up in the meter's user list as `local/ha-realtime-push#…`, separate from the official integration's token.
 
-With the default settings there is nothing else to configure. If you run Home Assistant on an SD card or plan to enable the phase entities, read [Storage and load estimates](#storage-and-load-estimates) first.
+With the default settings there is nothing else to configure. If you run Home Assistant on an SD card or plan to enable the phase entities, read [Storage and load](#storage-and-load) first.
 
 If the token is later removed, Home Assistant asks you to authenticate again (one more button press). If the meter gets a new IP address, it is picked up through discovery, or you can change it with **Reconfigure**.
 
@@ -121,22 +122,23 @@ The integration measures how late its own timer runs (event loop lag). It steps 
 - telegrams arrive late at least twice (more than twice the usual gap), or
 - the WebSocket connection dropped.
 
-After 30s without any of these it steps one level back, and again after every further 30s, back to the option you chose. It never goes faster than that. The *Current update interval* entity shows the interval in use and why.
+After 30s without any of these it steps one level back, and again after every further 30s, back to the option you chose. It never goes faster than that. The *Current update interval* entity shows the interval in use and why. You find it under *Diagnostic* on the meter's device page: *Settings → Devices & services → HomeWizard Realtime Push*.
 
-## Storage and load estimates
+## Storage and load
 
-> These figures are **estimates** based on a typical SQLite row size. They will be replaced with measured values before version 1.0.0.
+> Measured on a DSMR 5 meter (one telegram per second) over 24-hour windows. Your figures depend on how often your values change.
 
-A Home Assistant state row takes roughly 200 bytes including indexes. Power, voltage and current change on almost every update, so nearly every update becomes a row. Home Assistant keeps 10 days of history by default and then deletes the oldest rows, so the database levels off at about the size below instead of growing forever.
+Home Assistant only writes a row when the value changes, so a reading that stays the same adds nothing. A row takes about 180 bytes including indexes. Home Assistant keeps 10 days of history by default and then deletes the oldest rows, so the database levels off at about the size below instead of growing forever.
 
 | Speed | Rows/day per entity | Power only (default) | Power + all 9 phase entities |
 |---|---|---|---|
-| Realtime (1s) | 86,400 | ≈ 170MB | ≈ 1.7GB |
-| Very fast (2s) | 43,200 | ≈ 85MB | ≈ 850MB |
-| Fast (3s) | 28,800 | ≈ 60MB | ≈ 600MB |
-| Normal (5s) | 17,280 | ≈ 35MB | ≈ 350MB |
+| Realtime (1s) | ≈ 77,000 | ≈ 140MB | up to ≈ 1.4GB |
+| Very fast (2s) | ≈ 40,000 | ≈ 70MB | up to ≈ 700MB |
+| Fast (3s) | ≈ 26,500 | ≈ 50MB | up to ≈ 500MB |
+| Normal (5s) | ≈ 16,300 | ≈ 30MB | up to ≈ 300MB |
 
-- Sizes are for 10 days of history. A single-phase connection has 3 phase entities instead of 9, so 4 entities in total.
+- Sizes are for 10 days of history. The 5s row is measured on the official integration's power entity, which updates at the same rate.
+- The phase column assumes every phase entity changes as often as power. Voltage changes less often, so the real figure is lower. A single-phase connection has 3 phase entities instead of 9, so 4 entities in total.
 - Long-term statistics (5-minute and hourly) are the same size at every speed.
 - **Load:** a few state changes per second is light work for Home Assistant. The real cost comes from what listens to the entities: automations and template sensors that trigger on every change, and open dashboards that show them. Trigger only on what you need, and use the adaptive speed above as a safety net.
 
@@ -201,7 +203,7 @@ The integration helps in three ways:
   |---|---|---|
   | No measurements | 5 minutes | Nothing arrives from the meter. |
   | Not pushing measurements | 15 minutes | The WebSocket doesn't work; values come in by HTTPS polling instead. |
-  | Updates slower than configured | 30 minutes | The integration has slowed down for a long time (see [Adaptive speed](#adaptive-speed-throttling)). |
+  | Updates slower than configured | 30 minutes | The integration has been throttled for a long time (see [Adaptive speed](#adaptive-speed-throttling)). |
 
   When the meter rejects the token, Home Assistant asks you to authenticate again instead.
 
@@ -250,14 +252,7 @@ actions:
 
 The triggers are broad on purpose. While the integration reloads, for example when the meter gets a new IP address, Status is briefly *unavailable* instead of *Problem*. `not_to: "off"` counts that as part of the outage, and `to: "off"` without `from` resumes after it. The trade-off: the resume step also runs when nothing was paused, for example after you change the update speed. It then turns the controller on even if you had switched it off yourself. Add a condition if that matters to you.
 
-A Home Assistant restart doesn't count as a problem either: while Home Assistant shuts down, the entities keep their last state instead of reporting a gap. Polling and slowing down don't set Status to *Problem*: the data is still fresh then, and pausing for that would do more harm than good.
-
-## How data reaches Home Assistant
-
-1. The integration opens `wss://<meter>/api/ws`, authenticates with its token and subscribes to measurements. TLS is verified against HomeWizard's own certificate authority.
-2. Every telegram the meter sends is kept as the *latest* value. The first telegram that arrives once the chosen interval is up is published to the entities straight away. If that telegram is late, the latest one is published 0.5s after the interval instead. In Realtime mode each telegram is published as it arrives.
-3. If the WebSocket fails, it reconnects with backoff (1, 2, 4… up to 30s, with jitter). Meanwhile it polls `https://<meter>/api/measurement` at the current interval, so values keep coming.
-4. When no value arrives for 10s (or 3 intervals, or 3 telegram gaps on meters that send less often, whichever is longest), the entities go unavailable. They come back with the next value.
+A Home Assistant restart doesn't count as a problem either: while Home Assistant shuts down, the entities keep their last state instead of reporting a gap. Polling and throttling don't set Status to *Problem*: the data is still fresh then, and pausing for that would do more harm than good.
 
 ## Troubleshooting and diagnostics
 
@@ -320,7 +315,7 @@ python -m venv .venv
 
 ## Support
 
-If this integration is useful to you, a coffee is a welcome thank you.
+If this integration is useful to you, a coffee is a welcome thank you!
 
 <a href="https://ko-fi.com/tkaspersnl"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
 

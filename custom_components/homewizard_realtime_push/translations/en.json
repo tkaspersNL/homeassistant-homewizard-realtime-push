@@ -61,7 +61,7 @@
           "update_speed": "Update speed"
         },
         "data_description": {
-          "update_speed": "Realtime follows your meter: about 1s on a DSMR 5 meter, 10s on older meters. See the README for storage estimates."
+          "update_speed": "Realtime follows your meter: about 1s on a DSMR 5 meter, 10s on older meters. See the README for how much storage each speed uses."
         }
       }
     }
