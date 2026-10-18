@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-18
+
 ### Changed
 
 - The README shows measured storage figures instead of estimates, and explains setup and throttling more clearly.
