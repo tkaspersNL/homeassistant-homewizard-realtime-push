@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-19
+
+### Changed
+
+- Passes the full HACS validation, including the brand check, so it can be added to the HACS default list.
+
 ## [1.0.1] - 2026-10-19
 
 ### Fixed
