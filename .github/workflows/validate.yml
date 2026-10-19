@@ -25,6 +25,3 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # The brand images ship in the integration's brand folder, which
-          # Home Assistant loads itself; they are not in home-assistant/brands.
-          ignore: brands
