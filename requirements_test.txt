@@ -1,4 +1,4 @@
 pytest-homeassistant-custom-component==0.13.372
-python-homewizard-energy>=10.0.1
+python-homewizard-energy>=10.2.0
 mypy==2.4.0
 ruff==0.17.1
