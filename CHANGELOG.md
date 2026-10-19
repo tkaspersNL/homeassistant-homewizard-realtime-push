@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-19
+
 ### Fixed
 
 - The README shows the logo and the license badge in HACS. Before, HACS showed the logo's HTML as text and the license badge as a broken image.

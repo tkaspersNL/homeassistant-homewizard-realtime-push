@@ -9,6 +9,6 @@
   "issue_tracker": "https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/issues",
   "loggers": ["homewizard_energy"],
   "requirements": ["python-homewizard-energy>=10.0.1"],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "zeroconf": ["_homewizard._tcp.local."]
 }
