@@ -13,7 +13,7 @@ jobs:
     name: GitHub release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check the version matches the tag
         run: |
           version="${GITHUB_REF_NAME#v}"
@@ -31,7 +31,7 @@ jobs:
             found { print }
           ' CHANGELOG.md > release_notes.md
           test -s release_notes.md
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           body_path: release_notes.md
           prerelease: ${{ startsWith(github.ref_name, 'v0.') }}

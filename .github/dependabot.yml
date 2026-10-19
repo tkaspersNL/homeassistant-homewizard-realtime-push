@@ -1,10 +1,13 @@
 version: 2
 updates:
+  # Gitflow: updates go to develop and ship with the next release.
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly
   - package-ecosystem: pip
     directory: /
+    target-branch: develop
     schedule:
       interval: weekly
