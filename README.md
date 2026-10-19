@@ -6,7 +6,7 @@
 </picture>
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
-[![Release](https://img.shields.io/github/v/release/tkaspersnl/homeassistant-homewizard-realtime-push?include_prereleases)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/releases)
+[![Release](https://img.shields.io/github/v/release/tkaspersnl/homeassistant-homewizard-realtime-push)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/releases)
 [![Validate](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml/badge.svg)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml)
 [![Tests](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml/badge.svg)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -277,7 +277,8 @@ logger:
 
 - HomeWizard documents the WebSocket handshake but not every detail of the measurement messages. If the meter sends something unexpected, the integration falls back to polling and logs it at debug level.
 - One P1 meter per config entry. Other HomeWizard devices (kWh meters, sockets, batteries) are not supported.
-- The update speed applies to all entities of a meter.
+- One update speed for all entities. You can't run Power at 1s and the phase entities at 5s. If you enable the phase entities only for a dashboard, consider [excluding them from the recorder](#optional-stop-saving-the-fast-entities-history).
+- IPv4 only. Entering an IPv6 address fails with *cannot connect*, and discoveries that announce only an IPv6 address are ignored. Give the meter a fixed IPv4 address (a DHCP reservation in your router) if its address keeps changing.
 
 ## FAQ
 

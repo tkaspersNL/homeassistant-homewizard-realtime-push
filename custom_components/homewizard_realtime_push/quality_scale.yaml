@@ -6,7 +6,9 @@ rules:
   appropriate-polling:
     status: exempt
     comment: Local push; HTTPS polling is only a fallback and follows the update speed.
-  brands: todo
+  brands:
+    status: done
+    comment: Home Assistant loads the icons from the integration's brand/ folder.
   common-modules: done
   config-flow-test-coverage: done
   config-flow: done
@@ -52,7 +54,7 @@ rules:
   icon-translations: done
   reconfiguration-flow: done
   docs-data-update: done
-  docs-examples: todo
+  docs-examples: done
   docs-known-limitations: done
   docs-supported-devices: done
   docs-supported-functions: done
