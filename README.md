@@ -16,13 +16,13 @@ It is built for things that need to react quickly to the grid connection, such a
 
 ## Why
 
+The official integration polls the meter every 5s, and you can't make it faster: calling `homeassistant.update_entity` from an automation doesn't help, because refresh requests are debounced with a 10s cooldown. This integration solves that: the meter pushes each reading to Home Assistant as soon as it has it.
+
 - **No polling.** The meter sends each new telegram itself. There are no HTTP requests every second, no timeouts piling up, and less load on the meter's Wi-Fi.
 - **Fresh data.** A value is about as old as the telegram (1s at most on a DSMR 5 meter), not "up to one poll interval".
 - **Current API.** API v2 is HomeWizard's current local API: it needs a token and is encrypted (HTTPS/WSS). The old v1 API is open plain HTTP.
 - **Resilient.** It reconnects with backoff, falls back to HTTPS polling while the WebSocket is down, throttles its update rate when Home Assistant is busy, and turns its entities unavailable when data stops. An automation never acts on a frozen value.
 - **Easy setup.** The integration auto-discovers the meter on your network. You press the button on the HomeWizard P1 meter once to authorize it; there is no token to copy and usually no IP address to enter. We do recommend giving the meter a fixed IP address for stability, but it will work with a dynamic one too.
-
-The official integration polls every 5s. Calling `homeassistant.update_entity` from an automation does not make it faster, because refresh requests are debounced with a 10s cooldown.
 
 ## Designed to run next to the official integration
 
