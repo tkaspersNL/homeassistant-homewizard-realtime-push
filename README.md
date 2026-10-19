@@ -1,15 +1,12 @@
 # HomeWizard Realtime Push
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/dark_icon.svg">
-  <img src="assets/brand/icon.svg" alt="" width="96" align="right">
-</picture>
+<img src="https://raw.githubusercontent.com/tkaspersNL/homeassistant-homewizard-realtime-push/main/assets/brand/icon.svg" alt="" width="96" align="right">
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
-[![Release](https://img.shields.io/github/v/release/tkaspersnl/homeassistant-homewizard-realtime-push)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/releases)
-[![Validate](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml/badge.svg)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml)
-[![Tests](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml/badge.svg)](https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/tkaspersNL/homeassistant-homewizard-realtime-push)](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/releases)
+[![Validate](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml/badge.svg)](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml)
+[![Tests](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml/badge.svg)](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/blob/main/LICENSE)
 
 Fast power readings from a HomeWizard P1 meter in Home Assistant, pushed by the meter over its local API v2 WebSocket instead of polled. You choose an update rate between every telegram (about 1s) and 5s, with automatic throttling if Home Assistant can't keep up.
 
@@ -52,9 +49,9 @@ If the device is in an area, Home Assistant may put the area name in front of en
 
 ### HACS (recommended)
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tkaspersnl&repository=homeassistant-homewizard-realtime-push&category=integration)
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tkaspersNL&repository=homeassistant-homewizard-realtime-push&category=integration)
 
-1. Select the button above, or in HACS add `https://github.com/tkaspersnl/homeassistant-homewizard-realtime-push` as a custom repository of type *Integration*.
+1. Select the button above, or in HACS add `https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push` as a custom repository of type *Integration*.
 2. Download **HomeWizard Realtime Push**.
 3. Restart Home Assistant.
 
