@@ -74,16 +74,7 @@ With the default settings there is nothing else to configure. If you run Home As
 
 If the token is later removed, Home Assistant asks you to authenticate again (one more button press). If the meter gets a new IP address, it is picked up through discovery, or you can change it with **Reconfigure**.
 
-## Uninstall
-
-If you want to uninstall the integration, follow these steps in this order:
-
-1. **Switch over what uses the fast entities.** Point automations, scripts and controllers (for example a home battery controller) back to the official integration's entities, such as `sensor.p1_meter_power`. Otherwise they lose their input as soon as the entities are gone.
-2. **Delete the integration.** Go to *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Delete*. This removes the *P1 Meter Realtime* device and its entities. The official HomeWizard integration keeps working as before.
-3. **Remove the code, then restart Home Assistant.**
-   - Installed through HACS: open **HomeWizard Realtime Push → ⋮ → Remove**. HACS deletes the files itself. The repository stays in HACS's list; to drop it too, remove it under *HACS → ⋮ → Custom repositories*.
-   - Installed manually: delete the `custom_components/homewizard_realtime_push` folder.
-4. **Optional: clean up.** If you added the recorder `exclude` pattern from [Storage and load](#storage-and-load), remove it from `configuration.yaml`. The fast entities' history leaves the database on its own (after 10 days by default). Their long-term statistics stay until you delete them under *Developer tools → Statistics*.
+To remove the integration, see [Uninstall](#uninstall).
 
 ## Update speed options
 
@@ -295,6 +286,17 @@ Less than fast polling: there is one long-lived connection instead of a request 
 
 **Why do I see a second device for my meter?**
 The fast entities have their own device, so their entity IDs don't collide with the official ones and you can exclude them from the recorder with one pattern.
+
+## Uninstall
+
+If you want to uninstall the integration, follow these steps in this order:
+
+1. **Switch over what uses the fast entities.** Point automations, scripts and controllers (for example a home battery controller) back to the official integration's entities, such as `sensor.p1_meter_power`. Otherwise they lose their input as soon as the entities are gone.
+2. **Delete the integration.** Go to *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Delete*. This removes the *P1 Meter Realtime* device and its entities. The official HomeWizard integration keeps working as before.
+3. **Remove the code, then restart Home Assistant.**
+   - Installed through HACS: open **HomeWizard Realtime Push → ⋮ → Remove**. HACS deletes the files itself. The repository stays in HACS's list; to drop it too, remove it under *HACS → ⋮ → Custom repositories*.
+   - Installed manually: delete the `custom_components/homewizard_realtime_push` folder.
+4. **Optional: clean up.** If you added the recorder `exclude` pattern from [Storage and load](#storage-and-load), remove it from `configuration.yaml`. The fast entities' history leaves the database on its own (after 10 days by default). Their long-term statistics stay until you delete them under *Developer tools → Statistics*.
 
 ## Contributing
 
