@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.entity import Entity
 
 from .const import DOMAIN
@@ -22,6 +22,9 @@ class RealtimeEntity(Entity):
         self._attr_unique_id = f"{DOMAIN}_{device.serial}_{key}"
         # A separate device keeps entity IDs apart from the official integration.
         self._attr_device_info = DeviceInfo(
+            # The serial is the meter's MAC address; with it, DHCP discovery
+            # can follow the meter to a new IP address.
+            connections={(CONNECTION_NETWORK_MAC, device.serial)},
             identifiers={(DOMAIN, device.serial)},
             manufacturer="HomeWizard",
             model=device.model_name or device.product_type,

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The diagnostics download shows the meter's own timestamp of the reading on display.
+- Home Assistant also follows the meter to a new IP address when it sees the meter's DHCP request, like the official integration does. Before, only the meter's network announcement updated the address.
 
 ### Changed
 

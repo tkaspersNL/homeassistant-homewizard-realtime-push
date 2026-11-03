@@ -54,6 +54,7 @@
       "not_p1_meter": "This integration supports the HomeWizard P1 meter only. Use the official HomeWizard integration for other devices.",
       "reauth_successful": "Re-authentication was successful",
       "reconfigure_successful": "Re-configuration was successful",
+      "unknown": "Unexpected error",
       "wrong_device": "This is a different P1 meter than the one that was set up."
     },
     "progress": {

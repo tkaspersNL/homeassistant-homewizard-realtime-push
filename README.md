@@ -72,7 +72,7 @@ The meter is usually discovered automatically. Otherwise add **HomeWizard Realti
 
 With the default settings there is nothing else to configure. If you run Home Assistant on an SD card or plan to enable the phase entities, read [Storage and load](#storage-and-load) first.
 
-If the token is later removed, Home Assistant asks you to authenticate again (one more button press). If the meter gets a new IP address, it is picked up through discovery, or you can change it with **Reconfigure**.
+If the token is later removed, Home Assistant asks you to authenticate again (one more button press). If the meter gets a new IP address, Home Assistant picks it up from the meter's network announcement or its DHCP request, like the official integration does. You can also change it with **Reconfigure**.
 
 To remove the integration, see [Uninstall](#uninstall).
 

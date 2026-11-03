@@ -8,9 +8,11 @@ from ipaddress import ip_address
 import json
 from pathlib import Path
 import re
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.config_entries import (
+    SOURCE_DHCP,
     SOURCE_USER,
     SOURCE_ZEROCONF,
     ConfigFlowResult,
@@ -18,6 +20,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_IP_ADDRESS, CONF_TOKEN
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homewizard_energy.errors import DisabledError, RequestError, UnauthorizedError
 from homewizard_energy.models import Device
@@ -355,6 +358,71 @@ async def test_zeroconf_ignores_ipv6(
     assert result["reason"] == "ipv6_not_supported"
     # A working IPv4 address must survive an IPv6-only announcement.
     assert mock_config_entry.data[CONF_IP_ADDRESS] == HOST
+
+
+def dhcp_info(ip: str = "192.0.2.30", mac: str = SERIAL) -> DhcpServiceInfo:
+    return DhcpServiceInfo(ip=ip, hostname="p1meter", macaddress=mac)
+
+
+async def start_dhcp(hass: HomeAssistant, info: DhcpServiceInfo) -> ConfigFlowResult:
+    return await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_DHCP}, data=info
+    )
+
+
+async def test_dhcp_updates_ip_of_configured_entry(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, v2_api: MagicMock
+) -> None:
+    mock_config_entry.add_to_hass(hass)
+    result = await start_dhcp(hass, dhcp_info())
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert mock_config_entry.data == {CONF_IP_ADDRESS: "192.0.2.30", CONF_TOKEN: TOKEN}
+    v2_api.device.assert_awaited_once()
+
+
+async def test_dhcp_with_known_ip_contacts_nothing(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, v2_api: MagicMock
+) -> None:
+    mock_config_entry.add_to_hass(hass)
+    result = await start_dhcp(hass, dhcp_info(ip=HOST))
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    v2_api.device.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("answer", "reason"),
+    [
+        pytest.param(RequestError, "cannot_connect", id="no-answer"),
+        pytest.param(UnauthorizedError, "cannot_connect", id="token-rejected"),
+        pytest.param(
+            Device.from_dict({**DEVICE, "serial": "aabbccddeeff"}),
+            "wrong_device",
+            id="other-meter",
+        ),
+    ],
+)
+async def test_dhcp_keeps_ip_unless_the_meter_answers_there(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    v2_api: MagicMock,
+    answer: Any,
+    reason: str,
+) -> None:
+    v2_api.device.side_effect = [answer]
+    mock_config_entry.add_to_hass(hass)
+    result = await start_dhcp(hass, dhcp_info())
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == reason
+    assert mock_config_entry.data[CONF_IP_ADDRESS] == HOST
+
+
+async def test_dhcp_does_not_set_up_a_new_meter(hass: HomeAssistant) -> None:
+    result = await start_dhcp(hass, dhcp_info())
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "unknown"
+    assert not hass.config_entries.async_entries(DOMAIN)
 
 
 @pytest.mark.usefixtures("v2_api")

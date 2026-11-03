@@ -54,6 +54,7 @@
       "not_p1_meter": "Deze integratie ondersteunt alleen de HomeWizard P1-meter. Gebruik voor andere apparaten de officiële HomeWizard-integratie.",
       "reauth_successful": "Herauthenticatie geslaagd",
       "reconfigure_successful": "Herconfiguratie geslaagd",
+      "unknown": "Onverwachte fout",
       "wrong_device": "Dit is een andere P1-meter dan die eerder is ingesteld."
     },
     "progress": {
