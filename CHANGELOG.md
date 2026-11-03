@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The diagnostics download shows the meter's own timestamp of the reading on display.
+- Home Assistant also follows the meter to a new IP address when it sees the meter's DHCP request, like the official integration does. Before, only the meter's network announcement updated the address.
+
 ### Changed
 
 - The README explains how to install and remove the integration through the Marketplace, which replaces HACS in Home Assistant 2026.11.
+
+### Fixed
+
+- Entities go unavailable when the meter keeps repeating its last reading. Before, the old value kept coming back for several seconds at a time, so the Status sensor didn't stay on *Problem*.
 
 ## [1.0.3] - 2026-11-03
 

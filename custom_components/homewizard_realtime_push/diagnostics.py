@@ -51,9 +51,15 @@ async def async_get_config_entry_diagnostics(
             },
             "freshness": hub.freshness.as_dict(),
             "measurement": {
-                key: value
-                for key, value in asdict(measurement).items()
-                if key.startswith(("power_", "voltage_", "current_"))
+                # The meter's own time for the telegram on display.
+                "timestamp": (
+                    measurement.timestamp.isoformat() if measurement.timestamp else None
+                ),
+                **{
+                    key: value
+                    for key, value in asdict(measurement).items()
+                    if key.startswith(("power_", "voltage_", "current_"))
+                },
             },
         },
         TO_REDACT,

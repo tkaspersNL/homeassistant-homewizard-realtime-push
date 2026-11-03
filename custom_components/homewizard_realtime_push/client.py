@@ -93,13 +93,19 @@ class RealtimeClient:
         token: str,
         listener: ClientListener,
         poll_interval: Callable[[], float],
+        last: Measurement | None = None,
     ) -> None:
-        """Set up the client; call run() to start it."""
+        """Set up the client; call run() to start it.
+
+        `last` is the reading the caller already has, so the device sending it
+        again on subscribe doesn't count as a new one.
+        """
         self._session = session
         self._api = api
         self._token = token
         self._listener = listener
         self._poll_interval = poll_interval
+        self._last = last
         self._transport = Transport.CONNECTING
         self._poll_task: asyncio.Task[None] | None = None
         self._auth_failed = asyncio.Event()
@@ -155,11 +161,27 @@ class RealtimeClient:
         except (InvalidFieldValue, MissingField, TypeError, ValueError) as err:
             _LOGGER.debug("Skipping unreadable measurement: %r", err)
             return
+        # A repeated reading is no sign of a working stream either.
+        if self._is_repeat(measurement):
+            return
         if not self._streaming:
             self._streaming = True
             await self._stop_polling()
             self._set_transport(Transport.WEBSOCKET)
             _LOGGER.debug("Streaming measurements from %s", self._api.host)
+        self._deliver(measurement)
+
+    def _is_repeat(self, measurement: Measurement) -> bool:
+        # A meter that gets no new telegrams keeps serving the last one, on
+        # every poll and every new subscription. Without a timestamp, a new
+        # reading with the same values looks the same, so it always passes.
+        if measurement.timestamp is None or measurement != self._last:
+            return False
+        _LOGGER.debug("Skipping a repeated reading from %s", self._api.host)
+        return True
+
+    def _deliver(self, measurement: Measurement) -> None:
+        self._last = measurement
         self._listener.on_measurement(measurement)
 
     async def _expect(self, ws: aiohttp.ClientWebSocketResponse, kind: str) -> None:
@@ -227,7 +249,8 @@ class RealtimeClient:
             ) as err:
                 _LOGGER.debug("Polling %s failed: %r", self._api.host, err)
             else:
-                self._listener.on_measurement(measurement)
+                if not self._is_repeat(measurement):
+                    self._deliver(measurement)
             await asyncio.sleep(self._poll_interval())
 
     async def _wait(self, delay: float) -> None:

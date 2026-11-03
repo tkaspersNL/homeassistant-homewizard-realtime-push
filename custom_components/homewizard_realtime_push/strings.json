@@ -54,6 +54,7 @@
       "not_p1_meter": "This integration supports the HomeWizard P1 meter only. Use the official HomeWizard integration for other devices.",
       "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
       "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]",
       "wrong_device": "This is a different P1 meter than the one that was set up."
     },
     "progress": {
@@ -150,7 +151,7 @@
   "issues": {
     "no_data": {
       "title": "No measurements from {name}",
-      "description": "The P1 meter has sent no measurements for at least {minutes} minutes, and its realtime entities are unavailable. Anything that controls a home battery or load from these entities is working without grid data.\n\nCheck that the meter is powered and online in the HomeWizard app, and that Home Assistant can reach it on the network. This message disappears by itself when measurements return."
+      "description": "The P1 meter has sent no new measurements for at least {minutes} minutes, and its realtime entities are unavailable. Anything that controls a home battery or load from these entities is working without grid data.\n\nCheck that the meter is powered and online in the HomeWizard app, and that Home Assistant can reach it on the network. The message also appears when the meter keeps repeating its last reading; restarting the meter by unplugging it for a moment can help. It disappears by itself when new measurements arrive."
     },
     "polling_fallback": {
       "title": "{name} is not pushing measurements",

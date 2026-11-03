@@ -79,6 +79,7 @@ class RealtimeHub:
             entry.data[CONF_TOKEN],
             self,
             lambda: self.throttle.interval,
+            last=measurement,
         )
 
     @property

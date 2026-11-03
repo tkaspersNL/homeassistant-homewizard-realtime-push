@@ -96,7 +96,10 @@ def fast_poll() -> float:
 
 
 async def start(
-    device: FakeDevice, api: MagicMock, recorder: Recorder
+    device: FakeDevice,
+    api: MagicMock,
+    recorder: Recorder,
+    last: Measurement | None = None,
 ) -> tuple[asyncio.Task[None], TestServer, ClientSession]:
     app = web.Application()
     app.router.add_get("/api/ws", device.ws)
@@ -104,7 +107,7 @@ async def start(
     await server.start_server()
     api.host = f"127.0.0.1:{server.port}"
     session = ClientSession()
-    client = RealtimeClient(session, api, TOKEN, recorder, lambda: 0.01)
+    client = RealtimeClient(session, api, TOKEN, recorder, lambda: 0.01, last=last)
     with patch.object(client_module, "WS_URL", "ws://{host}/api/ws"):
         task = asyncio.create_task(client.run())
         await asyncio.sleep(0)
@@ -365,6 +368,107 @@ async def test_unreachable_device_polls() -> None:
         with pytest.raises(asyncio.CancelledError):
             await task
         await session.close()
+
+
+def reading(
+    power: float, timestamp: str | None = "2026-01-01T12:00:00"
+) -> dict[str, Any]:
+    data: dict[str, Any] = {"power_w": power}
+    if timestamp is not None:
+        data["timestamp"] = timestamp
+    return data
+
+
+async def test_repeated_readings_are_skipped() -> None:
+    async def handler(ws: web.WebSocketResponse) -> None:
+        await device.handshake(ws)
+        # The reading the client started from, sent again on subscribe.
+        await ws.send_json({"type": "measurement", "data": reading(1)})
+        await ws.send_json(
+            {"type": "measurement", "data": reading(2, "2026-01-01T12:00:01")}
+        )
+        await ws.send_json(
+            {"type": "measurement", "data": reading(2, "2026-01-01T12:00:01")}
+        )
+        # Same second, other values: a new reading.
+        await ws.send_json(
+            {"type": "measurement", "data": reading(3, "2026-01-01T12:00:01")}
+        )
+        # Same values, next second: a new reading, so a grid held steady
+        # at 0W stays available.
+        await ws.send_json(
+            {"type": "measurement", "data": reading(3, "2026-01-01T12:00:02")}
+        )
+        await ws.receive()
+
+    device = FakeDevice([handler])
+    recorder = Recorder()
+    api = make_api()
+    last = Measurement.from_dict(reading(1))
+    task, server, session = await start(device, api, recorder, last=last)
+    try:
+        await recorder.wait_for(lambda: len(recorder.measurements) == 3)
+        await asyncio.sleep(0.05)
+    finally:
+        await stop(task, server, session)
+
+    assert [m.power_w for m in recorder.measurements] == [2, 3, 3]
+    assert recorder.transports == [Transport.WEBSOCKET]
+
+
+@pytest.mark.usefixtures("no_backoff")
+async def test_meter_repeating_its_last_reading_delivers_nothing() -> None:
+    async def stuck(ws: web.WebSocketResponse) -> None:
+        await device.handshake(ws)
+        await ws.send_json({"type": "measurement", "data": reading(1)})
+        await ws.receive()
+
+    async def poll() -> Measurement:
+        nonlocal polls
+        polls += 1
+        if polls >= 3 and device.connections >= 3:
+            seen_enough.set()
+        return Measurement.from_dict(reading(1))
+
+    polls = 0
+    seen_enough = asyncio.Event()
+    device = FakeDevice([stuck])
+    recorder = Recorder()
+    api = make_api()
+    api.measurement.side_effect = poll
+    with patch.object(client_module, "RECEIVE_TIMEOUT", 0.05):
+        task, server, session = await start(
+            device, api, recorder, last=Measurement.from_dict(reading(1))
+        )
+        try:
+            async with asyncio.timeout(5):
+                await seen_enough.wait()
+        finally:
+            await stop(task, server, session)
+
+    assert recorder.measurements == []
+    # Repeats on subscribe don't count as streaming, so no reconnect is
+    # reported each time the silent WebSocket times out.
+    assert recorder.transports == [Transport.POLLING]
+
+
+async def test_readings_without_timestamp_always_pass() -> None:
+    async def handler(ws: web.WebSocketResponse) -> None:
+        await device.handshake(ws)
+        await ws.send_json({"type": "measurement", "data": reading(1, None)})
+        await ws.send_json({"type": "measurement", "data": reading(1, None)})
+        await ws.receive()
+
+    device = FakeDevice([handler])
+    recorder = Recorder()
+    last = Measurement.from_dict(reading(1, None))
+    task, server, session = await start(device, make_api(), recorder, last=last)
+    try:
+        await recorder.wait_for(lambda: len(recorder.measurements) == 2)
+    finally:
+        await stop(task, server, session)
+
+    assert recorder.transports == [Transport.WEBSOCKET]
 
 
 def test_backoff_grows_and_caps() -> None:

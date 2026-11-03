@@ -62,6 +62,35 @@ async def test_default_entities(
     assert device.name == "P1 meter Realtime"
     assert device.manufacturer == "HomeWizard"
     assert device.sw_version == "6.05"
+    assert device.connections == {(dr.CONNECTION_NETWORK_MAC, "5c:2f:af:ab:cd:ef")}
+
+
+@pytest.mark.usefixtures("mock_api", "mock_client")
+async def test_device_shares_its_mac_with_the_official_integration(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    official = MockConfigEntry(domain="homewizard", unique_id=f"HWE-P1_{SERIAL}")
+    official.add_to_hass(hass)
+    official_device = device_registry.async_get_or_create(
+        config_entry_id=official.entry_id,
+        connections={(dr.CONNECTION_NETWORK_MAC, SERIAL)},
+        identifiers={("homewizard", SERIAL)},
+        name="P1 meter",
+    )
+    mock_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, SERIAL), mock_config_entry.entry_id
+    )
+    assert device is not None
+    assert device.id != official_device.id
+    assert device.connections == official_device.connections
+    assert hass.states.get(POWER) is not None
+    assert device_registry.async_get(official_device.id) == official_device
 
 
 @pytest.mark.usefixtures("mock_client")
