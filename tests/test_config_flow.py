@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Generator
 from ipaddress import ip_address
+import json
+from pathlib import Path
+import re
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from homeassistant.config_entries import SOURCE_USER, SOURCE_ZEROCONF
+from homeassistant.config_entries import (
+    SOURCE_USER,
+    SOURCE_ZEROCONF,
+    ConfigFlowResult,
+)
 from homeassistant.const import CONF_IP_ADDRESS, CONF_TOKEN
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -29,8 +37,9 @@ NEW_TOKEN = "FEDCBA9876543210FEDCBA9876543210"
 
 @pytest.fixture(autouse=True)
 def no_wait() -> Generator[None]:
+    """Repeat token requests at once; the wait still allows several of them."""
     with (
-        patch(f"{FLOW}.TOKEN_WAIT", 0),
+        patch(f"{FLOW}.TOKEN_WAIT", 5),
         patch(f"{FLOW}.TOKEN_RETRY_INTERVAL", 0),
     ):
         yield
@@ -69,6 +78,17 @@ def v1_api() -> Generator[MagicMock]:
         yield api
 
 
+async def wait_for_token(
+    hass: HomeAssistant, result: ConfigFlowResult
+) -> ConfigFlowResult:
+    """Let the waiting screen finish and return the step after it."""
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    assert result["step_id"] == "authorize"
+    assert result["progress_action"] == "wait_for_button"
+    await hass.async_block_till_done()
+    return await hass.config_entries.flow.async_configure(result["flow_id"])
+
+
 def zeroconf_info(**properties: str) -> ZeroconfServiceInfo:
     return ZeroconfServiceInfo(
         ip_address=ip_address(HOST),
@@ -94,14 +114,12 @@ async def test_user_flow(hass: HomeAssistant, v2_api: MagicMock) -> None:
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_IP_ADDRESS: f" {HOST} "}
-    )
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "authorize"
-    assert result["errors"] == {}
-
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    with patch(f"{FLOW}.TOKEN_WAIT", 90):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_IP_ADDRESS: f" {HOST} "}
+        )
+        assert result["description_placeholders"] == {"seconds": "90"}
+        result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "P1 meter"
     assert result["data"] == {CONF_IP_ADDRESS: HOST, CONF_TOKEN: NEW_TOKEN}
@@ -112,30 +130,33 @@ async def test_user_flow(hass: HomeAssistant, v2_api: MagicMock) -> None:
 
 
 @pytest.mark.usefixtures("has_v2")
-async def test_button_pressed_before_submit(
-    hass: HomeAssistant, v2_api: MagicMock
-) -> None:
+async def test_token_on_first_request(hass: HomeAssistant, v2_api: MagicMock) -> None:
     v2_api.get_token.side_effect = None
     v2_api.get_token.return_value = NEW_TOKEN
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
     )
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert v2_api.get_token.await_count == 1
 
 
 @pytest.mark.usefixtures("has_v2")
-async def test_button_not_pressed_then_pressed(
+async def test_retry_after_time_runs_out(
     hass: HomeAssistant, v2_api: MagicMock
 ) -> None:
-    v2_api.get_token.side_effect = [DisabledError, DisabledError, NEW_TOKEN]
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
-    )
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    with patch(f"{FLOW}.TOKEN_WAIT", 0):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
+        )
+        result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "authorize_retry"
     assert result["errors"] == {"base": "button_not_pressed"}
 
+    # Retrying starts a new wait, in which the button is pressed.
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
@@ -144,11 +165,10 @@ async def test_retries_until_button_pressed(
     hass: HomeAssistant, v2_api: MagicMock
 ) -> None:
     v2_api.get_token.side_effect = [DisabledError, DisabledError, NEW_TOKEN]
-    with patch(f"{FLOW}.TOKEN_WAIT", 5):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
-        )
-        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
+    )
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert v2_api.get_token.await_count == 3
 
@@ -159,9 +179,48 @@ async def test_authorize_cannot_connect(hass: HomeAssistant, v2_api: MagicMock) 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
     )
+    result = await wait_for_token(hass, result)
+    assert result["step_id"] == "authorize_retry"
     assert result["errors"] == {"base": "cannot_connect"}
+    assert v2_api.get_token.await_count == 1
+
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+@pytest.mark.usefixtures("has_v2")
+async def test_wait_survives_connection_hiccup(
+    hass: HomeAssistant, v2_api: MagicMock
+) -> None:
+    v2_api.get_token.side_effect = [DisabledError, RequestError, NEW_TOKEN]
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
+    )
+    result = await wait_for_token(hass, result)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert v2_api.get_token.await_count == 3
+
+
+@pytest.mark.usefixtures("has_v2")
+async def test_closing_setup_stops_token_requests(
+    hass: HomeAssistant, v2_api: MagicMock
+) -> None:
+    requested = asyncio.Event()
+
+    async def get_token(name: str) -> str:
+        requested.set()
+        raise DisabledError
+
+    v2_api.get_token.side_effect = get_token
+    with patch(f"{FLOW}.TOKEN_RETRY_INTERVAL", 10):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
+        )
+        await requested.wait()
+        hass.config_entries.flow.async_abort(result["flow_id"])
+        await hass.async_block_till_done()
+    assert v2_api.get_token.await_count == 1
 
 
 @pytest.mark.usefixtures("has_v2")
@@ -184,6 +243,7 @@ async def test_finish_aborts(
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: HOST}
     )
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == reason
 
@@ -196,7 +256,7 @@ async def test_user_flow_already_configured_updates_entry(
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}, data={CONF_IP_ADDRESS: "192.0.2.20"}
     )
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
     assert mock_config_entry.data == {
@@ -243,8 +303,7 @@ async def test_zeroconf_flow(hass: HomeAssistant) -> None:
     assert result["description_placeholders"] == {"name": "P1 meter", "host": HOST}
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["step_id"] == "authorize"
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {CONF_IP_ADDRESS: HOST, CONF_TOKEN: NEW_TOKEN}
 
@@ -301,13 +360,14 @@ async def test_zeroconf_ignores_ipv6(
 @pytest.mark.usefixtures("v2_api")
 async def test_reauth(hass: HomeAssistant, mock_config_entry: MockConfigEntry) -> None:
     mock_config_entry.add_to_hass(hass)
-    result = await mock_config_entry.start_reauth_flow(hass)
+    with patch(f"{FLOW}.TOKEN_WAIT", 90):
+        result = await mock_config_entry.start_reauth_flow(hass)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reauth_confirm"
+    assert result["description_placeholders"]["seconds"] == "90"
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["step_id"] == "authorize"
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reauth_successful"
     assert mock_config_entry.data == {CONF_IP_ADDRESS: HOST, CONF_TOKEN: NEW_TOKEN}
@@ -320,7 +380,7 @@ async def test_reauth_wrong_device(
     mock_config_entry.add_to_hass(hass)
     result = await mock_config_entry.start_reauth_flow(hass)
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await wait_for_token(hass, result)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "wrong_device"
     assert mock_config_entry.data[CONF_TOKEN] == TOKEN
@@ -382,3 +442,20 @@ async def test_options_flow(
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert mock_config_entry.options == {CONF_UPDATE_SPEED: "realtime"}
+
+
+@pytest.mark.parametrize("language", ["en", "nl", "de"])
+def test_texts_name_their_own_button(language: str) -> None:
+    translations = Path(__file__).parents[1] / (
+        "custom_components/homewizard_realtime_push/translations"
+    )
+    steps = json.loads((translations / f"{language}.json").read_text("utf-8"))[
+        "config"
+    ]["step"]
+    # HA's default button label differs per version, so a text that names a
+    # button must give that button its own label.
+    for step in steps.values():
+        named = re.findall(r"\*\*(.+?)\*\*", step.get("description", ""))
+        assert named == ([step["submit"]] if "submit" in step else [])
+    assert "submit" in steps["authorize_retry"]
+    assert "submit" in steps["reauth_confirm"]
