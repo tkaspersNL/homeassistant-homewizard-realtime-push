@@ -58,6 +58,9 @@ class HomeWizardRealtimeConfigFlow(ConfigFlow, domain=DOMAIN):
 
     host: str
     product_name: str = "P1 meter"
+    _token_task: asyncio.Task[str | None] | None = None
+    _token: str
+    _authorize_error: str
 
     @staticmethod
     @callback
@@ -136,31 +139,49 @@ class HomeWizardRealtimeConfigFlow(ConfigFlow, domain=DOMAIN):
         """Explain why a new token is needed."""
         if user_input is not None:
             return await self.async_step_authorize()
-        return self.async_show_form(step_id="reauth_confirm")
+        return self.async_show_form(
+            step_id="reauth_confirm", description_placeholders=self._wait_placeholders()
+        )
 
     async def async_step_authorize(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Wait for the button press and get a token."""
-        errors: dict[str, str] = {}
-        try:
-            # The first request opens the window for the button press.
-            token = await self._async_request_token(
-                TOKEN_WAIT if user_input is not None else 0
+        """Wait for the button press while asking the device for a token."""
+        if self._token_task is None:
+            # Not eager, so the waiting screen shows before the first request.
+            self._token_task = self.hass.async_create_task(
+                self._async_request_token(TOKEN_WAIT), eager_start=False
             )
-        except RequestError:
-            token = None
-            errors["base"] = "cannot_connect"
-        else:
-            if token is None and user_input is not None:
-                errors["base"] = "button_not_pressed"
+        if not self._token_task.done():
+            return self.async_show_progress(
+                step_id="authorize",
+                progress_action="wait_for_button",
+                progress_task=self._token_task,
+                description_placeholders=self._wait_placeholders(),
+            )
 
-        if token is not None:
-            return await self._async_finish(token)
+        task, self._token_task = self._token_task, None
+        try:
+            token = task.result()
+        except RequestError:
+            self._authorize_error = "cannot_connect"
+            return self.async_show_progress_done(next_step_id="authorize_retry")
+        if token is None:
+            self._authorize_error = "button_not_pressed"
+            return self.async_show_progress_done(next_step_id="authorize_retry")
+        self._token = token
+        return self.async_show_progress_done(next_step_id="finish")
+
+    async def async_step_authorize_retry(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Say why no token came, and wait again when asked."""
+        if user_input is not None:
+            return await self.async_step_authorize()
         return self.async_show_form(
-            step_id="authorize",
-            errors=errors,
-            description_placeholders={"wait": f"{TOKEN_WAIT:.0f}"},
+            step_id="authorize_retry",
+            errors={"base": self._authorize_error},
+            description_placeholders=self._wait_placeholders(),
         )
 
     async def async_step_reconfigure(
@@ -210,6 +231,10 @@ class HomeWizardRealtimeConfigFlow(ConfigFlow, domain=DOMAIN):
             return False
         return True
 
+    @staticmethod
+    def _wait_placeholders() -> dict[str, str]:
+        return {"seconds": f"{TOKEN_WAIT:.0f}"}
+
     async def _async_request_token(self, wait: float) -> str | None:
         """Request a token, retrying until the button is pressed or time runs out."""
         api = HomeWizardEnergyV2(
@@ -220,17 +245,28 @@ class HomeWizardRealtimeConfigFlow(ConfigFlow, domain=DOMAIN):
         name = f"{TOKEN_NAME}#{uuid[:6]}"
         loop = asyncio.get_running_loop()
         deadline = loop.time() + wait
+        answered = False
         while True:
             try:
                 token: str = await api.get_token(name)
             except DisabledError:
-                if loop.time() >= deadline:
-                    return None
-                await asyncio.sleep(TOKEN_RETRY_INTERVAL)
+                answered = True
+            except RequestError:
+                # Once the meter has answered, a Wi-Fi hiccup during the wait
+                # is not fatal; a meter that never answers fails at once.
+                if not answered:
+                    raise
             else:
                 return token
+            if loop.time() >= deadline:
+                return None
+            await asyncio.sleep(TOKEN_RETRY_INTERVAL)
 
-    async def _async_finish(self, token: str) -> ConfigFlowResult:
+    async def async_step_finish(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Check the device with the new token and store it."""
+        token = self._token
         api = HomeWizardEnergyV2(
             self.host, token=token, clientsession=async_get_clientsession(self.hass)
         )
