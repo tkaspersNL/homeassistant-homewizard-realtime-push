@@ -180,6 +180,7 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. The
 
 - **Power** uses the same sign as the official integration: positive when you import from the grid, negative when you export.
 - Phase entities are only created for phases the meter reports. A single-phase connection gets phase 1 only.
+- Phase values are single readings, not averages. At the faster update speeds, short peaks show up that the official integration's 5s polling often misses, so anything that acts on them, such as phase or fuse protection, may react more often.
 - **Current update interval** changes only when the interval or connection changes, so it costs almost no storage. Its attributes:
   - `configured_interval`: the option you chose, in seconds
   - `reason`: `configured`, `loop_lag`, `late_frames` or `reconnect`
@@ -187,6 +188,14 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. The
 - **Status** shows *Problem* (state `on`) when there is no fresh data, and *OK* (state `off`) otherwise. Its `reason` attribute says why: `no_data` (no new reading for 10s or more) or `token_rejected` (the meter no longer accepts the token). It stays available itself, so automations can rely on it. See [Safety](#safety-when-the-data-stops).
 
 There are no energy totals, tariffs or gas entities on purpose: the official integration covers those, and they don't need fast updates.
+
+### Turning on the phase entities
+
+The phase entities are off by default. Turn on only the ones you need: each one adds to the database (see [Storage and load](#storage-and-load)).
+
+1. Go to *Settings → Devices & services → HomeWizard Realtime Push* and open the *P1 Meter Realtime* device. The phase entities are behind a link like **+9 disabled entities**.
+2. Select an entity, then the gear icon. Switch on **Enabled** and select **Update**.
+3. Wait 30s. Home Assistant adds enabled entities by reloading the integration 30s after the last change. Until then they have no value, and you can't select them in other integrations yet.
 
 ## Safety: when the data stops
 
