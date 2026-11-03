@@ -184,7 +184,7 @@ If you already have a `recorder:` section, add the pattern to its `exclude`. The
   - `configured_interval`: the option you chose, in seconds
   - `reason`: `configured`, `loop_lag`, `late_frames` or `reconnect`
   - `transport`: `websocket`, `polling` (fallback) or `connecting`
-- **Status** shows *Problem* (state `on`) when there is no fresh data, and *OK* (state `off`) otherwise. Its `reason` attribute says why: `no_data` (nothing arrived for 10s or more) or `token_rejected` (the meter no longer accepts the token). It stays available itself, so automations can rely on it. See [Safety](#safety-when-the-data-stops).
+- **Status** shows *Problem* (state `on`) when there is no fresh data, and *OK* (state `off`) otherwise. Its `reason` attribute says why: `no_data` (no new reading for 10s or more) or `token_rejected` (the meter no longer accepts the token). It stays available itself, so automations can rely on it. See [Safety](#safety-when-the-data-stops).
 
 There are no energy totals, tariffs or gas entities on purpose: the official integration covers those, and they don't need fast updates.
 
@@ -194,13 +194,13 @@ If something controls a battery or a load from these entities, decide what it sh
 
 The integration helps in three ways:
 
-- **Unavailable entities.** When no value arrives for 10s or more, the fast entities become *unavailable*. They never keep showing an old value.
+- **Unavailable entities.** When no new reading arrives for 10s or more, the fast entities become *unavailable*. This includes a meter that keeps sending its last reading again. They never keep showing an old value.
 - **The Status sensor** switches to *Problem* at the same moment and back to *OK* when fresh data returns. Use it to pause control and to alert yourself.
 - **Repairs.** If a problem lasts, a message appears under *Settings → System → Repairs*. It disappears by itself when the problem is over.
 
   | Message | Appears after | Meaning |
   |---|---|---|
-  | No measurements | 5 minutes | Nothing arrives from the meter. |
+  | No measurements | 5 minutes | No new readings arrive from the meter. |
   | Not pushing measurements | 15 minutes | The WebSocket doesn't work; values come in by HTTPS polling instead. |
   | Updates slower than configured | 30 minutes | The integration has been throttled for a long time (see [Adaptive speed](#adaptive-speed-throttling)). |
 

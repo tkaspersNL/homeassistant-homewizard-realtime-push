@@ -150,7 +150,7 @@
   "issues": {
     "no_data": {
       "title": "Keine Messwerte von {name}",
-      "description": "Das P1-Meter hat seit mindestens {minutes} Minuten keine Messwerte gesendet, und seine Echtzeit-Entitäten sind nicht verfügbar. Alles, was einen Heimspeicher oder Verbraucher anhand dieser Entitäten steuert, arbeitet jetzt ohne Netzdaten.\n\nPrüfe, ob das Meter Strom hat und in der HomeWizard-App online ist und ob Home Assistant es im Netzwerk erreicht. Diese Meldung verschwindet von selbst, sobald wieder Messwerte ankommen."
+      "description": "Das P1-Meter hat seit mindestens {minutes} Minuten keine neuen Messwerte gesendet, und seine Echtzeit-Entitäten sind nicht verfügbar. Alles, was einen Heimspeicher oder Verbraucher anhand dieser Entitäten steuert, arbeitet jetzt ohne Netzdaten.\n\nPrüfe, ob das Meter Strom hat und in der HomeWizard-App online ist und ob Home Assistant es im Netzwerk erreicht. Die Meldung erscheint auch, wenn das Meter immer wieder seinen letzten Messwert sendet; dann hilft es manchmal, das Meter kurz auszustecken. Sie verschwindet von selbst, sobald wieder neue Messwerte ankommen."
     },
     "polling_fallback": {
       "title": "{name} sendet keine Push-Messwerte",

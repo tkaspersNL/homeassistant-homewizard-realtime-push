@@ -150,7 +150,7 @@
   "issues": {
     "no_data": {
       "title": "Geen metingen van {name}",
-      "description": "De P1-meter heeft al minstens {minutes} minuten geen metingen gestuurd en de realtime entiteiten zijn niet beschikbaar. Alles wat een thuisbatterij of verbruik regelt op basis van deze entiteiten, werkt nu zonder netgegevens.\n\nControleer of de meter stroom heeft en online is in de HomeWizard-app, en of Home Assistant hem via het netwerk kan bereiken. Deze melding verdwijnt vanzelf zodra er weer metingen binnenkomen."
+      "description": "De P1-meter heeft al minstens {minutes} minuten geen nieuwe metingen gestuurd en de realtime entiteiten zijn niet beschikbaar. Alles wat een thuisbatterij of verbruik regelt op basis van deze entiteiten, werkt nu zonder netgegevens.\n\nControleer of de meter stroom heeft en online is in de HomeWizard-app, en of Home Assistant hem via het netwerk kan bereiken. De melding verschijnt ook als de meter steeds zijn laatste meting herhaalt; dan helpt het soms om de meter even los te koppelen. Ze verdwijnt vanzelf zodra er weer nieuwe metingen binnenkomen."
     },
     "polling_fallback": {
       "title": "{name} pusht geen metingen",

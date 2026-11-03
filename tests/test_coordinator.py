@@ -467,3 +467,8 @@ async def test_telegram_delay_from_naive_and_aware_timestamps(make_hub) -> None:
     hub.on_measurement(make_measurement(timestamp=sent.isoformat()))
     delay = hub.freshness.as_dict()["telegram_delay_s"]
     assert 0.3 < delay < 1.5
+
+
+async def test_client_starts_from_the_setup_reading(make_hub, mock_client) -> None:
+    hub = make_hub()
+    assert mock_client.call_args.kwargs["last"] is hub.measurement
