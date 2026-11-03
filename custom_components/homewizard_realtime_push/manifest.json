@@ -3,12 +3,13 @@
   "name": "HomeWizard Realtime Push",
   "codeowners": ["@tkaspersNL"],
   "config_flow": true,
+  "dhcp": [{ "registered_devices": true }],
   "documentation": "https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push",
   "integration_type": "device",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/issues",
   "loggers": ["homewizard_energy"],
   "requirements": ["python-homewizard-energy>=10.0.1"],
-  "version": "1.0.3",
+  "version": "1.1.0",
   "zeroconf": ["_homewizard._tcp.local."]
 }

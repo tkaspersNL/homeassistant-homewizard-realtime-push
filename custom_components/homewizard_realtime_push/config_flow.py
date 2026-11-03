@@ -23,6 +23,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
     TextSelector,
 )
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homewizard_energy import HomeWizardEnergyV1, HomeWizardEnergyV2, has_v2_api
 from homewizard_energy.const import Model
@@ -115,6 +116,37 @@ class HomeWizardRealtimeConfigFlow(ConfigFlow, domain=DOMAIN):
         self.product_name = properties[CONF_PRODUCT_NAME]
         self.context["title_placeholders"] = {"name": self.product_name}
         return await self.async_step_discovery_confirm()
+
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> ConfigFlowResult:
+        """Follow a configured meter to a new IP address.
+
+        Only MAC addresses of this integration's devices start this step.
+        """
+        host = discovery_info.ip
+        await self.async_set_unique_id(discovery_info.macaddress)
+        entry = self.hass.config_entries.async_entry_for_domain_unique_id(
+            DOMAIN, discovery_info.macaddress
+        )
+        if entry is not None and entry.data[CONF_IP_ADDRESS] != host:
+            # A DHCP request can ask for an address the meter doesn't get,
+            # so only an address where it answers replaces the stored one.
+            api = HomeWizardEnergyV2(
+                host,
+                token=entry.data[CONF_TOKEN],
+                clientsession=async_get_clientsession(self.hass),
+            )
+            try:
+                device = await api.device()
+            except HomeWizardEnergyException:
+                return self.async_abort(reason="cannot_connect")
+            if device.serial != entry.unique_id:
+                return self.async_abort(reason="wrong_device")
+        self._abort_if_unique_id_configured(updates={CONF_IP_ADDRESS: host})
+        # Setting up a new meter needs the button press, so DHCP leaves that
+        # to zeroconf discovery and the user.
+        return self.async_abort(reason="unknown")
 
     async def async_step_discovery_confirm(
         self, user_input: dict[str, Any] | None = None
