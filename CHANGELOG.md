@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Easier setup: Home Assistant waits up to 90 seconds for the button press on the HomeWizard P1 meter and continues by itself. If you're too late, you can try again with one click. Before, you had to press the button and then select Submit in time, which often took several tries.
+- Clearer setup texts: they ask for one short press and say that the meter's light doesn't change.
+
+### Fixed
+
+- Setup texts and buttons match. Before, the texts said Submit, but that button's label differs between Home Assistant versions and languages.
+
 ## [1.0.2] - 2026-10-19
 
 ### Changed

@@ -17,12 +17,17 @@
         "description": "Set up {name} at {host} for realtime updates? This runs next to the official HomeWizard integration and does not replace it."
       },
       "authorize": {
-        "title": "Press the button on your P1 meter",
-        "description": "Press the button on the P1 meter once, then select Submit. Home Assistant waits up to {wait}s for the press and then gets its own access token from the meter."
+        "title": "Press the button on your HomeWizard P1 meter"
+      },
+      "authorize_retry": {
+        "title": "No access token received",
+        "description": "Select **Try again**, then press the button on the HomeWizard P1 meter once, briefly, within {seconds} seconds.",
+        "submit": "Try again"
       },
       "reauth_confirm": {
         "title": "New access token needed",
-        "description": "The P1 meter no longer accepts the stored token, for example because it was removed in the HomeWizard app. Select Submit to request a new one; you will need to press the button on the meter."
+        "description": "The P1 meter no longer accepts the stored token, for example because it was removed in the HomeWizard app. Select **Continue** to request a new one, then press the button on the HomeWizard P1 meter once, briefly, within {seconds} seconds.",
+        "submit": "Continue"
       },
       "reconfigure": {
         "title": "Change the IP address",
@@ -37,7 +42,7 @@
     },
     "error": {
       "cannot_connect": "Can't reach a HomeWizard device with API v2 at this address. Check the IP address and that the device is online.",
-      "button_not_pressed": "No button press was detected in time. Press the button on the P1 meter and select Submit again.",
+      "button_not_pressed": "The button was not pressed in time.",
       "token_rejected": "The device at this address does not accept the stored token. Is it the same P1 meter?"
     },
     "abort": {
@@ -50,6 +55,9 @@
       "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
       "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",
       "wrong_device": "This is a different P1 meter than the one that was set up."
+    },
+    "progress": {
+      "wait_for_button": "Press the button on the HomeWizard P1 meter once, briefly, within {seconds} seconds. The light doesn't change when you do; that's normal. Setup then continues by itself.\n\nIf you're too late, you can try again."
     }
   },
   "options": {

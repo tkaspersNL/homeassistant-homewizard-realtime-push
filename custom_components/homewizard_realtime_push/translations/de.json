@@ -17,12 +17,17 @@
         "description": "{name} unter {host} für Echtzeit-Updates einrichten? Dies läuft neben der offiziellen HomeWizard-Integration und ersetzt sie nicht."
       },
       "authorize": {
-        "title": "Drücke die Taste an deinem P1-Meter",
-        "description": "Drücke einmal die Taste am P1-Meter und wähle dann Senden. Home Assistant wartet bis zu {wait}s auf den Tastendruck und holt sich dann ein eigenes Zugriffstoken vom Meter."
+        "title": "Drücke die Taste an deinem HomeWizard P1-Meter"
+      },
+      "authorize_retry": {
+        "title": "Kein Zugriffstoken erhalten",
+        "description": "Klicke auf **Erneut versuchen** und drücke danach innerhalb von {seconds} Sekunden einmal kurz die Taste am HomeWizard P1-Meter.",
+        "submit": "Erneut versuchen"
       },
       "reauth_confirm": {
         "title": "Neues Zugriffstoken erforderlich",
-        "description": "Das P1-Meter akzeptiert das gespeicherte Token nicht mehr, zum Beispiel weil es in der HomeWizard-App entfernt wurde. Wähle Senden, um ein neues anzufordern; dazu musst du die Taste am Meter drücken."
+        "description": "Das P1-Meter akzeptiert das gespeicherte Token nicht mehr, zum Beispiel weil es in der HomeWizard-App entfernt wurde. Klicke auf **Weiter**, um ein neues anzufordern, und drücke danach innerhalb von {seconds} Sekunden einmal kurz die Taste am HomeWizard P1-Meter.",
+        "submit": "Weiter"
       },
       "reconfigure": {
         "title": "IP-Adresse ändern",
@@ -37,7 +42,7 @@
     },
     "error": {
       "cannot_connect": "Unter dieser Adresse ist kein HomeWizard-Gerät mit API v2 erreichbar. Prüfe die IP-Adresse und ob das Gerät online ist.",
-      "button_not_pressed": "Es wurde nicht rechtzeitig ein Tastendruck erkannt. Drücke die Taste am P1-Meter und wähle erneut Senden.",
+      "button_not_pressed": "Die Taste wurde nicht rechtzeitig gedrückt.",
       "token_rejected": "Das Gerät unter dieser Adresse akzeptiert das gespeicherte Token nicht. Ist es dasselbe P1-Meter?"
     },
     "abort": {
@@ -50,6 +55,9 @@
       "reauth_successful": "Die erneute Authentifizierung war erfolgreich",
       "reconfigure_successful": "Die Neukonfiguration war erfolgreich",
       "wrong_device": "Das ist ein anderes P1-Meter als das ursprünglich eingerichtete."
+    },
+    "progress": {
+      "wait_for_button": "Drücke innerhalb von {seconds} Sekunden einmal kurz die Taste am HomeWizard P1-Meter. Die Leuchte ändert sich dabei nicht; das ist normal. Die Einrichtung geht danach von selbst weiter.\n\nBist du zu spät, kannst du es erneut versuchen."
     }
   },
   "options": {

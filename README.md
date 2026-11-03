@@ -67,7 +67,7 @@ If the device is in an area, Home Assistant may put the area name in front of en
 The meter is usually discovered automatically. Otherwise add **HomeWizard Realtime Push** under *Settings → Devices & services* and enter the meter's IP address.
 
 1. Confirm the meter.
-2. Press the button on the P1 meter once, then select **Submit**. Home Assistant waits up to 30s for the press.
+2. Press the button on the HomeWizard P1 meter once, briefly, within 90 seconds. Its light doesn't change when you do; that's normal. Setup continues by itself after the press, with nothing to select in Home Assistant. If you're too late, select **Try again**.
 3. The integration gets its own access token from the meter. It shows up in the meter's user list as `local/ha-realtime-push#…`, separate from the official integration's token.
 
 With the default settings there is nothing else to configure. If you run Home Assistant on an SD card or plan to enable the phase entities, read [Storage and load](#storage-and-load) first.
@@ -75,6 +75,12 @@ With the default settings there is nothing else to configure. If you run Home As
 If the token is later removed, Home Assistant asks you to authenticate again (one more button press). If the meter gets a new IP address, it is picked up through discovery, or you can change it with **Reconfigure**.
 
 To remove the integration, see [Uninstall](#uninstall).
+
+### Support
+
+If this integration is useful to you, a coffee is a welcome thank you!
+
+<a href="https://ko-fi.com/tkaspersnl"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
 
 ## Update speed options
 
@@ -253,7 +259,7 @@ A Home Assistant restart doesn't count as a problem either: while Home Assistant
 - **A message under Repairs.** See [Safety](#safety-when-the-data-stops) for what each one means. They clear themselves when the problem is over.
 - **`transport` stays on `polling`.** The WebSocket could not be used and the integration fell back to HTTPS polling. Values still arrive, but less efficiently. Please open an issue with diagnostics and debug logs.
 - **`reason` is `loop_lag`.** Home Assistant was too busy to keep up. Look for heavy automations or integrations, or choose a slower option.
-- **Setup says no button press was detected.** Press the button once, then select Submit within 30s.
+- **Setup says no button press was detected.** Select **Try again** on that screen, then press the button on the HomeWizard P1 meter once, briefly, within 90 seconds.
 - **Setup says the firmware is too old.** The meter only speaks API v1. Update it through the HomeWizard app, or keep using the official integration.
 
 **Diagnostics:** *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Download diagnostics*. Besides the settings and the latest measurement, it shows the live event loop lag, the time between telegrams, and how old the published values are since they arrived (on average and at most, since the last restart). The telegram delay compares the arrival time with the meter's clock, so it includes any offset of that clock. The token, serial number and IP address are redacted.
@@ -317,12 +323,6 @@ python -m venv .venv
 - Branches follow Gitflow: `main` holds releases, work happens on `develop` and `feature/*` branches.
 - Every change comes with tests, and the checks above must pass.
 - User-facing changes get a line under *Unreleased* in [CHANGELOG.md](CHANGELOG.md).
-
-## Support
-
-If this integration is useful to you, a coffee is a welcome thank you!
-
-<a href="https://ko-fi.com/tkaspersnl"><img height="36" src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" alt="Buy Me a Coffee at ko-fi.com"></a>
 
 ## Disclaimer
 

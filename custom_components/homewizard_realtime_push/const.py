@@ -20,8 +20,9 @@ CONF_UPDATE_SPEED: Final = "update_speed"
 
 # Token name prefix as shown in the device's user list (the library adds "local/").
 TOKEN_NAME: Final = "ha-realtime-push"  # noqa: S105
-# Pressing the button opens a 30s window on the device.
-TOKEN_WAIT: Final = 30.0
+# The device only takes a button press while token requests keep coming, so
+# setup repeats them; 90s leaves time to walk to the meter.
+TOKEN_WAIT: Final = 90.0
 TOKEN_RETRY_INTERVAL: Final = 1.0
 
 # Entities go unavailable after this long without a frame, or 3 intervals.
