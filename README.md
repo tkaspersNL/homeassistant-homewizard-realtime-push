@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/tkaspersNL/homeassistant-homewizard-realtime-push/main/assets/brand/icon.svg" alt="" width="96" align="right">
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://hacs.xyz)
 [![Release](https://img.shields.io/github/v/release/tkaspersNL/homeassistant-homewizard-realtime-push)](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/releases)
 [![Validate](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml/badge.svg)](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/actions/workflows/validate.yml)
 [![Tests](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml/badge.svg)](https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push/actions/workflows/tests.yml)
@@ -47,13 +47,13 @@ If the device is in an area, Home Assistant may put the area name in front of en
 
 ## Install
 
-### HACS (recommended)
+### Marketplace or HACS (recommended)
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tkaspersNL&repository=homeassistant-homewizard-realtime-push&category=integration)
+[![Open your Home Assistant instance and open this repository in the Marketplace or HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tkaspersNL&repository=homeassistant-homewizard-realtime-push&category=integration)
 
-1. Select the button above, or in HACS add `https://github.com/tkaspersNL/homeassistant-homewizard-realtime-push` as a custom repository of type *Integration*.
-2. Download **HomeWizard Realtime Push**.
-3. Restart Home Assistant.
+1. Select the button above. It opens this repository in the Marketplace (Home Assistant 2026.11 and later, under *Settings → Marketplace*) or in HACS. You can also search there for **HomeWizard Realtime Push**.
+2. Select **Install** in the Marketplace, or **Download** in HACS.
+3. After a HACS download, restart Home Assistant. The Marketplace tells you when a restart is needed.
 
 ### Manual
 
@@ -299,9 +299,10 @@ If you want to uninstall the integration, follow these steps in this order:
 
 1. **Switch over what uses the fast entities.** Point automations, scripts and controllers (for example a home battery controller) back to the official integration's entities, such as `sensor.p1_meter_power`. Otherwise they lose their input as soon as the entities are gone.
 2. **Delete the integration.** Go to *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Delete*. This removes the *P1 Meter Realtime* device and its entities. The official HomeWizard integration keeps working as before.
-3. **Remove the code, then restart Home Assistant.**
-   - Installed through HACS: open **HomeWizard Realtime Push → ⋮ → Remove**. HACS deletes the files itself. The repository stays in HACS's list; to drop it too, remove it under *HACS → ⋮ → Custom repositories*.
-   - Installed manually: delete the `custom_components/homewizard_realtime_push` folder.
+3. **Remove the code.**
+   - Installed through the Marketplace: open *Settings → Marketplace → HomeWizard Realtime Push → ⋮ → Uninstall*. The Marketplace deletes the files, and asks you to restart under *Settings → System → Repairs* when that is needed.
+   - Installed through HACS: open **HomeWizard Realtime Push → ⋮ → Remove**. HACS deletes the files itself. Then restart Home Assistant.
+   - Installed manually: delete the `custom_components/homewizard_realtime_push` folder, then restart Home Assistant.
 4. **Optional: clean up.** If you added the recorder `exclude` pattern from [Storage and load](#storage-and-load), remove it from `configuration.yaml`. The fast entities' history leaves the database on its own (after 10 days by default). Their long-term statistics stay until you delete them under *Developer tools → Statistics*.
 
 ## Contributing
