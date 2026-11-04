@@ -307,7 +307,8 @@ The fast entities have their own device, so their entity IDs don't collide with 
 If you want to uninstall the integration, follow these steps in this order:
 
 1. **Switch over what uses the fast entities.** Point automations, scripts and controllers (for example a home battery controller) back to the official integration's entities, such as `sensor.p1_meter_power`. Otherwise they lose their input as soon as the entities are gone.
-2. **Delete the integration.** Go to *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Delete*. This removes the *P1 Meter Realtime* device and its entities. The official HomeWizard integration keeps working as before.
+2. **Delete the integration.** Go to *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Delete*. This removes the *P1 Meter Realtime* device and its entities, and deletes the integration's access token from the meter. The official HomeWizard integration keeps working as before, with its own token.
+   If the meter can't be reached at that moment, the token stays in the meter's user list, and the HomeWizard app can't remove it. To clean it up, add the integration again and delete it while the meter is reachable.
 3. **Remove the code.**
    - Installed through the Marketplace: open *Settings → Marketplace → HomeWizard Realtime Push → ⋮ → Uninstall*. The Marketplace deletes the files, and asks you to restart under *Settings → System → Repairs* when that is needed.
    - Installed through HACS: open **HomeWizard Realtime Push → ⋮ → Remove**. HACS deletes the files itself. Then restart Home Assistant.

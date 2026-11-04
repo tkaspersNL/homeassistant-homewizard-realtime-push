@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Deleting the integration also deletes its access token from the HomeWizard P1 meter. Before, the token stayed in the meter's user list, and the HomeWizard app can't remove it.
+
 ### Changed
 
 - The README explains how to turn on the phase entities, and that their values show short peaks that 5s polling often misses.
