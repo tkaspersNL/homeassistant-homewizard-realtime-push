@@ -1,6 +1,7 @@
 {
   "domain": "homewizard_realtime_push",
   "name": "HomeWizard Realtime Push",
+  "categories": ["energy.meters_monitoring"],
   "codeowners": ["@tkaspersNL"],
   "config_flow": true,
   "dhcp": [{ "registered_devices": true }],
