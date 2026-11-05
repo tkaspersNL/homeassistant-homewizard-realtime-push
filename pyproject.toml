@@ -68,6 +68,11 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+  # python-homewizard-energy retries with backoff, which is archived and won't be
+  # fixed; Home Assistant core ignores the same warning.
+  "ignore:'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16:DeprecationWarning:(backoff._decorator|backoff._async)",
+]
 
 [tool.coverage.run]
 source = ["custom_components/homewizard_realtime_push"]
