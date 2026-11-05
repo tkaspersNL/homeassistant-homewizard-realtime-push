@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The README explains how to turn on the phase entities, and that their values show short peaks that 5s polling often misses.
+- The integration is listed under *Energy → Meters & monitoring*, so it's easier to find in the Marketplace.
 
 ## [1.1.0] - 2026-11-03
 
