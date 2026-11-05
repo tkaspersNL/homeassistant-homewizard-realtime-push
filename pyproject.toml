@@ -68,10 +68,15 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# Home Assistant aliases httpx on import, which has to happen before respx loads.
+addopts = "-p no:respx"
+pythonpath = ["."]
 filterwarnings = [
   # python-homewizard-energy retries with backoff, which is archived and won't be
   # fixed; Home Assistant core ignores the same warning.
   "ignore:'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16:DeprecationWarning:(backoff._decorator|backoff._async)",
+  # Home Assistant's own web server class; core ignores this warning too.
+  "ignore:Inheritance class HomeAssistantApplication from web.Application is discouraged:DeprecationWarning",
 ]
 
 [tool.coverage.run]
