@@ -10,7 +10,7 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP, STATE_OFF
 from homeassistant.core import HomeAssistant
 from homewizard_energy.errors import NotFoundError, RequestError, UnauthorizedError
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.homewizard_realtime_push.client import Transport
 from custom_components.homewizard_realtime_push.const import DOMAIN

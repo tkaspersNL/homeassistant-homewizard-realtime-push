@@ -25,7 +25,7 @@ from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homewizard_energy.errors import DisabledError, RequestError, UnauthorizedError
 from homewizard_energy.models import Device
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.homewizard_realtime_push.const import (
     CONF_UPDATE_SPEED,

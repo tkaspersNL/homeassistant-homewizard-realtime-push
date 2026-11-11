@@ -11,7 +11,7 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
 from homewizard_energy.models import Device
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.homewizard_realtime_push.client import Transport
 from custom_components.homewizard_realtime_push.const import (
