@@ -1,6 +1,6 @@
 [project]
 name = "homeassistant-homewizard-realtime-push"
-version = "1.1.0"
+version = "1.2.0"
 description = "Real-time HomeWizard P1 measurements for Home Assistant over the API v2 WebSocket."
 license = "MIT"
 requires-python = ">=3.14"
@@ -68,6 +68,16 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# Home Assistant aliases httpx on import, which has to happen before respx loads.
+addopts = "-p no:respx"
+pythonpath = ["."]
+filterwarnings = [
+  # python-homewizard-energy retries with backoff, which is archived and won't be
+  # fixed; Home Assistant core ignores the same warning.
+  "ignore:'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16:DeprecationWarning:(backoff._decorator|backoff._async)",
+  # Home Assistant's own web server class; core ignores this warning too.
+  "ignore:Inheritance class HomeAssistantApplication from web.Application is discouraged:DeprecationWarning",
+]
 
 [tool.coverage.run]
 source = ["custom_components/homewizard_realtime_push"]

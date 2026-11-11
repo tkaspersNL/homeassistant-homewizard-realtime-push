@@ -7,9 +7,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homewizard_energy import HomeWizardEnergyV2
-from homewizard_energy.errors import RequestError, UnauthorizedError
+from homewizard_energy.errors import (
+    HomeWizardEnergyException,
+    RequestError,
+    UnauthorizedError,
+)
 
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN, LOGGER, PLATFORMS
 from .coordinator import HomeWizardRealtimeConfigEntry, RealtimeHub
 
 
@@ -48,3 +52,28 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a config entry."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(
+    hass: HomeAssistant, entry: HomeWizardRealtimeConfigEntry
+) -> None:
+    """Delete the entry's token from the meter."""
+    # The HomeWizard app can't remove API v2 users, so this is the only clean-up.
+    # A failure is only logged: removing the entry must always work.
+    host = entry.data[CONF_IP_ADDRESS]
+    api = HomeWizardEnergyV2(
+        host, token=entry.data[CONF_TOKEN], clientsession=async_get_clientsession(hass)
+    )
+    try:
+        await api.delete_token()
+    except UnauthorizedError:
+        LOGGER.debug("The meter at %s no longer knows the token", host)
+    except (HomeWizardEnergyException, ValueError) as err:
+        LOGGER.warning(
+            "Could not delete the token from the meter at %s, so it stays in "
+            "the meter's user list: %s",
+            host,
+            err,
+        )
+    else:
+        LOGGER.debug("Deleted the token from the meter at %s", host)

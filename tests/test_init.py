@@ -2,17 +2,30 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from collections.abc import Generator
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, STATE_OFF
 from homeassistant.core import HomeAssistant
-from homewizard_energy.errors import RequestError, UnauthorizedError
+from homewizard_energy.errors import NotFoundError, RequestError, UnauthorizedError
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.homewizard_realtime_push.client import Transport
 from custom_components.homewizard_realtime_push.const import DOMAIN
+
+from .conftest import HOST, TOKEN
+
+
+@pytest.fixture
+def remove_api() -> Generator[MagicMock]:
+    """Patch the REST client used when an entry is removed."""
+    with patch(
+        "custom_components.homewizard_realtime_push.HomeWizardEnergyV2", autospec=True
+    ) as api_class:
+        api_class.return_value.delete_token = AsyncMock(return_value=None)
+        yield api_class
 
 
 async def test_setup_and_unload(
@@ -81,3 +94,69 @@ async def test_shutdown_is_not_a_problem(
     await hass.config_entries.async_unload(init_integration.entry_id)
     await hass.async_block_till_done()
     assert "Unable to remove unknown job listener" not in caplog.text
+
+
+async def test_remove_deletes_token(
+    hass: HomeAssistant, init_integration: MockConfigEntry, mock_api: MagicMock
+) -> None:
+    mock_api.delete_token = AsyncMock(return_value=None)
+    await hass.config_entries.async_remove(init_integration.entry_id)
+    await hass.async_block_till_done()
+
+    # Without a name, the meter deletes the user that owns the token.
+    mock_api.delete_token.assert_awaited_once_with()
+    assert not hass.config_entries.async_entries(DOMAIN)
+
+
+async def test_remove_entry_that_is_not_loaded_deletes_token(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, remove_api: MagicMock
+) -> None:
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_remove(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    remove_api.assert_called_once_with(HOST, token=TOKEN, clientsession=ANY)
+    remove_api.return_value.delete_token.assert_awaited_once_with()
+    assert not hass.config_entries.async_entries(DOMAIN)
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        RequestError("timeout"),
+        NotFoundError("Resource not found"),
+        ValueError("unreadable answer"),
+    ],
+)
+async def test_remove_works_when_token_delete_fails(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    remove_api: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+    error: Exception,
+) -> None:
+    remove_api.return_value.delete_token.side_effect = error
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_remove(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert not hass.config_entries.async_entries(DOMAIN)
+    assert "Could not delete the token from the meter at 192.0.2.10" in caplog.text
+    assert "Error calling entry remove callback" not in caplog.text
+
+
+async def test_remove_with_rejected_token_is_quiet(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    remove_api: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A token the meter rejects is already gone from its user list."""
+    remove_api.return_value.delete_token.side_effect = UnauthorizedError("rejected")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_remove(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert not hass.config_entries.async_entries(DOMAIN)
+    assert "Could not delete the token" not in caplog.text
+    assert "Error calling entry remove callback" not in caplog.text
