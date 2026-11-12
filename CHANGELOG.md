@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The update speed dialog shows how often your meter sends a reading, so you can see when a faster speed won't help.
 
+### Changed
+
+- A new update speed applies without reloading the integration. Before, the entities went *unavailable* for about a second, which an automation could take for an outage.
+
 ## [1.2.0] - 2026-11-11
 
 ### Added

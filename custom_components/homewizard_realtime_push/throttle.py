@@ -52,10 +52,7 @@ class Throttle[T]:
 
     def __init__(self, floor: float, now: float) -> None:
         """Start at the configured floor."""
-        if floor not in LEVELS:
-            raise ValueError(f"Unsupported interval: {floor}")
-        self._floor = LEVELS.index(floor)
-        self._level = self._floor
+        self._floor = self._level = _level_of(floor)
         self._reason = Reason.CONFIGURED
         self._last_change = now
         self._last_trouble = float("-inf")
@@ -130,6 +127,16 @@ class Throttle[T]:
             self._last_publish = now
         return frame
 
+    def set_floor(self, floor: float, now: float) -> None:
+        """Change the configured interval and start again from it.
+
+        A stepped-up level starts over too, so the new speed is measured on
+        its own merits.
+        """
+        self._floor = self._level = _level_of(floor)
+        self._reason = Reason.CONFIGURED
+        self._changed(now)
+
     def discard(self) -> None:
         """Drop the held frame without publishing it."""
         self._pending = None
@@ -199,3 +206,9 @@ class Throttle[T]:
         self._lags.clear()
         self._late.clear()
         self._reconnects.clear()
+
+
+def _level_of(interval: float) -> int:
+    if interval not in LEVELS:
+        raise ValueError(f"Unsupported interval: {interval}")
+    return LEVELS.index(interval)

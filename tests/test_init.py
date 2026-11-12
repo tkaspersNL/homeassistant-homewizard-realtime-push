@@ -3,12 +3,24 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from ipaddress import ip_address
 from unittest.mock import ANY, AsyncMock, MagicMock, PropertyMock, patch
 
-from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
-from homeassistant.const import EVENT_HOMEASSISTANT_STOP, STATE_OFF
-from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import (
+    SOURCE_REAUTH,
+    SOURCE_ZEROCONF,
+    ConfigEntryState,
+)
+from homeassistant.const import (
+    CONF_IP_ADDRESS,
+    EVENT_HOMEASSISTANT_STOP,
+    STATE_OFF,
+    STATE_UNAVAILABLE,
+)
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homewizard_energy.errors import NotFoundError, RequestError, UnauthorizedError
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
@@ -164,6 +176,39 @@ async def test_remove_with_rejected_token_is_quiet(
     assert "Error calling entry remove callback" not in caplog.text
 
 
+async def test_new_speed_applies_without_reload(
+    hass: HomeAssistant, init_integration: MockConfigEntry, mock_api: MagicMock
+) -> None:
+    hub = init_integration.runtime_data
+    power: list[str] = []
+
+    @callback
+    def record(event: Event[EventStateChangedData]) -> None:
+        if (state := event.data["new_state"]) is not None:
+            power.append(state.state)
+
+    async_track_state_change_event(hass, "sensor.p1_meter_realtime_power", record)
+
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    # No readings over the WebSocket yet, so the meter's interval is unknown.
+    assert result["step_id"] == "init"
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_UPDATE_SPEED: "realtime"}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert init_integration.state is ConfigEntryState.LOADED
+    assert init_integration.runtime_data is hub
+    mock_api.device.assert_awaited_once()
+    assert hub.throttle.floor == 1
+    interval = hass.states.get("sensor.p1_meter_realtime_current_update_interval")
+    assert interval.state == "1.0"
+    assert interval.attributes["configured_interval"] == 1.0
+    # A reload would have made the entities unavailable for a moment.
+    assert STATE_UNAVAILABLE not in power
+
+
 @pytest.mark.parametrize(
     ("period", "step", "placeholders"),
     [
@@ -194,3 +239,67 @@ async def test_options_flow_names_the_meter_interval_when_known(
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert init_integration.runtime_data.throttle.floor == 5
+
+
+async def test_new_ip_from_discovery_reloads_a_loaded_entry(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_api: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Home Assistant reloads the entry itself while it has no update listener."""
+    hub = init_integration.runtime_data
+    new_host = "192.0.2.20"
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_ZEROCONF},
+        data=ZeroconfServiceInfo(
+            ip_address=ip_address(new_host),
+            ip_addresses=[ip_address(new_host)],
+            hostname="p1meter.local.",
+            name="p1meter._homewizard._tcp.local.",
+            port=443,
+            type="_homewizard._tcp.local.",
+            properties={
+                "product_name": "P1 meter",
+                "product_type": "HWE-P1",
+                "serial": init_integration.unique_id,
+            },
+        ),
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert init_integration.data[CONF_IP_ADDRESS] == new_host
+    assert init_integration.state is ConfigEntryState.LOADED
+    assert init_integration.runtime_data is not hub
+    assert mock_api.device.await_count == 2
+    # Older Home Assistant versions reload with a listener too, but say nothing.
+    assert not init_integration.update_listeners
+    assert "update listener" not in caplog.text
+
+
+@pytest.mark.usefixtures("mock_client")
+async def test_speed_chosen_during_setup_retry_is_used_at_setup(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_api: MagicMock
+) -> None:
+    mock_api.measurement.side_effect = RequestError("timeout")
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert result["step_id"] == "init"
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_UPDATE_SPEED: "fast"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+
+    mock_api.measurement.side_effect = None
+    await hass.config_entries.async_reload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert mock_config_entry.runtime_data.throttle.floor == 3

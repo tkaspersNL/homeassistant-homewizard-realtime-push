@@ -12,7 +12,6 @@ from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlow,
-    OptionsFlowWithReload,
 )
 from homeassistant.const import CONF_IP_ADDRESS, CONF_TOKEN
 from homeassistant.core import callback
@@ -323,14 +322,19 @@ class HomeWizardRealtimeConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(title=device.product_name, data=data)
 
 
-class RealtimeOptionsFlow(OptionsFlowWithReload):
-    """Choose the update speed."""
+class RealtimeOptionsFlow(OptionsFlow):
+    """Choose the update speed; the running hub applies it without a reload."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Show the update speed dropdown."""
         if user_input is not None:
+            # Handed to the hub here, not through an update listener: Home
+            # Assistant leaves the reloads after an IP or token change to an
+            # integration's update listener once it has one.
+            if (hub := self._hub()) is not None:
+                hub.async_set_speed(UpdateSpeed(user_input[CONF_UPDATE_SPEED]))
             return self.async_create_entry(data=user_input)
 
         schema = vol.Schema(
@@ -364,11 +368,15 @@ class RealtimeOptionsFlow(OptionsFlowWithReload):
         """Handle the dropdown shown with the meter's interval."""
         return await self.async_step_init(user_input)
 
-    def _meter_interval(self) -> str | None:
-        """Return the meter's reading interval in whole seconds, if known."""
+    def _hub(self) -> RealtimeHub | None:
+        """Return the running hub, or None while the entry isn't loaded."""
         if self.config_entry.state is not ConfigEntryState.LOADED:
             return None
         hub: RealtimeHub = self.config_entry.runtime_data
-        if (period := hub.meter_interval) is None:
+        return hub
+
+    def _meter_interval(self) -> str | None:
+        """Return the meter's reading interval in whole seconds, if known."""
+        if (hub := self._hub()) is None or (period := hub.meter_interval) is None:
             return None
         return str(max(1, round(period)))

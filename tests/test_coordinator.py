@@ -264,6 +264,58 @@ async def test_meter_interval_needs_a_streaming_websocket(make_hub, clock) -> No
     assert hub.meter_interval is None
 
 
+async def test_new_speed_applies_in_place(
+    hass: HomeAssistant, make_hub, clock, caplog: pytest.LogCaptureFixture
+) -> None:
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    status = counter(hub, status=True)
+    calls = counter(hub)
+    hub.throttle._level += 1
+    hub._since[Issue.THROTTLED] = clock.now - ISSUE_AFTER[Issue.THROTTLED]
+    hub._check_issues(clock.now)
+    assert issue(hass, hub, Issue.THROTTLED) is not None
+    frame(hub, clock, 3, 10)
+    frame(hub, clock, 1, 20)
+    assert calls[0] == 1
+    assert hub._hold is not None
+    assert hub.freshness.as_dict()["publishes"] == 1
+
+    hub.async_set_speed(UpdateSpeed.REALTIME)
+    assert hub.throttle.floor == 1
+    assert hub.throttle.interval == 1
+    assert status[0] == 1
+    assert issue(hass, hub, Issue.THROTTLED) is None
+    assert "Update speed for p1.local is now 1.0s" in caplog.text
+    # Value ages from the old speed would mislead in the diagnostics.
+    assert hub.freshness.as_dict()["publishes"] == 0
+
+    # The next frame is published on arrival and replaces the held one.
+    frame(hub, clock, 1, 30)
+    assert calls[0] == 2
+    assert hub.measurement.power_w == 30
+    assert hub._hold is None
+
+    # The same speed again changes nothing.
+    hub.async_set_speed(UpdateSpeed.REALTIME)
+    assert status[0] == 1
+    assert hub.freshness.as_dict()["publishes"] == 1
+
+
+async def test_slower_speed_holds_frames_back(make_hub, clock) -> None:
+    hub = make_hub(UpdateSpeed.REALTIME)
+    calls = counter(hub)
+    frame(hub, clock, 1, 10)
+    assert calls[0] == 1
+
+    hub.async_set_speed(UpdateSpeed.NORMAL)
+    for power in range(20, 60, 10):
+        frame(hub, clock, 1, power)
+    assert calls[0] == 1
+    frame(hub, clock, 1, 60)
+    assert calls[0] == 2
+    assert hub.measurement.power_w == 60
+
+
 async def test_steps_up_on_reconnect_and_reports_status(make_hub, clock) -> None:
     hub = make_hub(UpdateSpeed.VERY_FAST)
     status = counter(hub, status=True)

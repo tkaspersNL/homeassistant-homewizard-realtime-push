@@ -150,6 +150,22 @@ class RealtimeHub:
         self._cancel_hold()
 
     @callback
+    def async_set_speed(self, speed: UpdateSpeed) -> None:
+        """Switch to a new update speed while running."""
+        # Done in place: a reload would make the entities unavailable for a
+        # moment, which an automation can take for an outage.
+        floor = UPDATE_SPEED_INTERVAL[speed]
+        if floor == self.throttle.floor:
+            return
+        self.throttle.set_floor(floor, self._clock())
+        # Diagnostics then show how fresh the values are at the new speed.
+        self.freshness = Freshness()
+        LOGGER.info("Update speed for %s is now %ss", self.api.host, floor)
+        self._since[Issue.THROTTLED] = None
+        self._clear_issue(Issue.THROTTLED)
+        self._notify(self._status_listeners)
+
+    @callback
     def async_add_listener(self, update: CALLBACK_TYPE) -> CALLBACK_TYPE:
         """Call update whenever a measurement is published or availability changes."""
         return self._add(self._listeners, update)
