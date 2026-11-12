@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.config_entries import (
     SOURCE_REAUTH,
     ConfigEntry,
+    ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlow,
@@ -48,6 +49,7 @@ from .const import (
     TOKEN_WAIT,
     UpdateSpeed,
 )
+from .coordinator import RealtimeHub
 
 HOST_SCHEMA = vol.Schema({vol.Required(CONF_IP_ADDRESS): TextSelector()})
 
@@ -347,4 +349,26 @@ class RealtimeOptionsFlow(OptionsFlowWithReload):
                 )
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        if (seconds := self._meter_interval()) is None:
+            return self.async_show_form(step_id="init", data_schema=schema)
+        # A step of its own, so its texts can name the meter's interval.
+        return self.async_show_form(
+            step_id="init_measured",
+            data_schema=schema,
+            description_placeholders={"seconds": seconds},
+        )
+
+    async def async_step_init_measured(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle the dropdown shown with the meter's interval."""
+        return await self.async_step_init(user_input)
+
+    def _meter_interval(self) -> str | None:
+        """Return the meter's reading interval in whole seconds, if known."""
+        if self.config_entry.state is not ConfigEntryState.LOADED:
+            return None
+        hub: RealtimeHub = self.config_entry.runtime_data
+        if (period := hub.meter_interval) is None:
+            return None
+        return str(max(1, round(period)))

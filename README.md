@@ -86,6 +86,8 @@ If this integration is useful to you, a coffee is a welcome thank you!
 
 Change this under *Settings → Devices & services → HomeWizard Realtime Push → Configure*. The integration reloads automatically.
 
+Once a few readings have come in over the WebSocket, the dialog also shows how often your meter sends one. No speed can be faster than that: with a meter that sends a reading every 10s, every option gives an update every 10s.
+
 | Option | Interval | Notes |
 |---|---|---|
 | Realtime | every reading (~1s on DSMR 5) | fastest, highest load |

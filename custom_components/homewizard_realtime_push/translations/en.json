@@ -72,6 +72,16 @@
         "data_description": {
           "update_speed": "Realtime follows your meter: about 1s on a DSMR 5 meter, 10s on older meters. See the README for how much storage each speed uses."
         }
+      },
+      "init_measured": {
+        "title": "Update speed",
+        "description": "How often power is updated. Faster gives a fresher reading, but costs more CPU and database storage. If Home Assistant can't keep up or the connection falters, the speed temporarily steps down (to 5s at most) and recovers automatically. Changes apply immediately; no restart needed.",
+        "data": {
+          "update_speed": "Update speed"
+        },
+        "data_description": {
+          "update_speed": "Your meter sends a reading about every {seconds}s. Realtime follows your meter, and no speed can be faster than it. See the README for how much storage each speed uses."
+        }
       }
     }
   },

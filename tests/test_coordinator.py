@@ -243,6 +243,27 @@ async def test_stale_window_follows_slow_meters(make_hub, clock) -> None:
     assert hub.stale_after == 30
 
 
+async def test_meter_interval_needs_a_streaming_websocket(make_hub, clock) -> None:
+    hub = make_hub(UpdateSpeed.VERY_FAST)
+    hub.on_transport(Transport.WEBSOCKET)
+    frame(hub, clock, 10, 10)
+    assert hub.meter_interval is None
+
+    for _ in range(5):
+        frame(hub, clock, 10, 10)
+    assert hub.meter_interval == 10
+
+    # Polled readings arrive at the polling pace, not the meter's.
+    hub.on_transport(Transport.POLLING)
+    assert hub.meter_interval is None
+    hub.on_transport(Transport.WEBSOCKET)
+    assert hub.meter_interval == 10
+
+    tick(hub, clock, hub.stale_after + 1)
+    assert not hub.available
+    assert hub.meter_interval is None
+
+
 async def test_steps_up_on_reconnect_and_reports_status(make_hub, clock) -> None:
     hub = make_hub(UpdateSpeed.VERY_FAST)
     status = counter(hub, status=True)

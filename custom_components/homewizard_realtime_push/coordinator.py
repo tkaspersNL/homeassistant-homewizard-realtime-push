@@ -94,6 +94,14 @@ class RealtimeHub:
         )
 
     @property
+    def meter_interval(self) -> float | None:
+        """Return how often the meter sends a reading, once that is known."""
+        # Polled frames arrive at the polling pace, not the meter's.
+        if self.transport is not Transport.WEBSOCKET or not self.available:
+            return None
+        return self.throttle.frame_period
+
+    @property
     def problem(self) -> Problem | None:
         """Return why there is no fresh data, or None when there is."""
         if self._token_rejected:

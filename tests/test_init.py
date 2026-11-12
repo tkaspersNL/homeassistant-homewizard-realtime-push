@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from unittest.mock import ANY, AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, PropertyMock, patch
 
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, STATE_OFF
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 from homewizard_energy.errors import NotFoundError, RequestError, UnauthorizedError
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.homewizard_realtime_push.client import Transport
-from custom_components.homewizard_realtime_push.const import DOMAIN
+from custom_components.homewizard_realtime_push.const import CONF_UPDATE_SPEED, DOMAIN
+from custom_components.homewizard_realtime_push.coordinator import RealtimeHub
 
 from .conftest import HOST, TOKEN
 
@@ -160,3 +162,35 @@ async def test_remove_with_rejected_token_is_quiet(
     assert not hass.config_entries.async_entries(DOMAIN)
     assert "Could not delete the token" not in caplog.text
     assert "Error calling entry remove callback" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("period", "step", "placeholders"),
+    [
+        (None, "init", None),
+        (9.8, "init_measured", {"seconds": "10"}),
+        (1.02, "init_measured", {"seconds": "1"}),
+        (0.6, "init_measured", {"seconds": "1"}),
+    ],
+)
+async def test_options_flow_names_the_meter_interval_when_known(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    period: float | None,
+    step: str,
+    placeholders: dict[str, str] | None,
+) -> None:
+    with patch.object(
+        RealtimeHub, "meter_interval", new_callable=PropertyMock, return_value=period
+    ):
+        result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == step
+    assert result["description_placeholders"] == placeholders
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_UPDATE_SPEED: "normal"}
+    )
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert init_integration.runtime_data.throttle.floor == 5
