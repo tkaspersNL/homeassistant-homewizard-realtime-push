@@ -2,4 +2,4 @@ pytest-homeassistant==2026.11.1
 pytest-cov==7.1.0
 python-homewizard-energy>=10.2.0
 mypy==2.4.1
-ruff==0.17.4
+ruff==0.17.5
