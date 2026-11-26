@@ -94,6 +94,14 @@ class RealtimeHub:
         )
 
     @property
+    def meter_interval(self) -> float | None:
+        """Return how often the meter sends a reading, once that is known."""
+        # Polled frames arrive at the polling pace, not the meter's.
+        if self.transport is not Transport.WEBSOCKET or not self.available:
+            return None
+        return self.throttle.frame_period
+
+    @property
     def problem(self) -> Problem | None:
         """Return why there is no fresh data, or None when there is."""
         if self._token_rejected:
@@ -140,6 +148,22 @@ class RealtimeHub:
         self._stopping = True
         self._cancel_timer()
         self._cancel_hold()
+
+    @callback
+    def async_set_speed(self, speed: UpdateSpeed) -> None:
+        """Switch to a new update speed while running."""
+        # Done in place: a reload would make the entities unavailable for a
+        # moment, which an automation can take for an outage.
+        floor = UPDATE_SPEED_INTERVAL[speed]
+        if floor == self.throttle.floor:
+            return
+        self.throttle.set_floor(floor, self._clock())
+        # Diagnostics then show how fresh the values are at the new speed.
+        self.freshness = Freshness()
+        LOGGER.info("Update speed for %s is now %ss", self.api.host, floor)
+        self._since[Issue.THROTTLED] = None
+        self._clear_issue(Issue.THROTTLED)
+        self._notify(self._status_listeners)
 
     @callback
     def async_add_listener(self, update: CALLBACK_TYPE) -> CALLBACK_TYPE:

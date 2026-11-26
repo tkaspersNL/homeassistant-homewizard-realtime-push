@@ -234,3 +234,33 @@ def test_never_goes_below_floor() -> None:
 @pytest.mark.parametrize("floor", LEVELS)
 def test_every_level_is_a_valid_floor(floor: float) -> None:
     assert Throttle[int](floor, now=0).interval == floor
+
+
+def test_set_floor_moves_floor_and_level() -> None:
+    throttle = Throttle[int](2.0, now=0)
+    last = feed_frames(throttle, 0, 6, 10)
+    throttle.set_floor(5.0, now=last)
+    assert throttle.floor == 5.0
+    assert throttle.interval == 5.0
+    assert throttle.reason is Reason.CONFIGURED
+    # The meter's pace doesn't depend on the speed.
+    assert throttle.frame_period == 10.0
+
+    with pytest.raises(ValueError, match="Unsupported interval"):
+        throttle.set_floor(4.0, now=last)
+    assert throttle.floor == 5.0
+
+
+def test_set_floor_starts_over_from_a_stepped_up_level() -> None:
+    throttle = Throttle[int](2.0, now=0)
+    throttle.record_reconnect(WINDOW)
+    assert throttle.evaluate(WINDOW) is True
+    assert throttle.interval == 3.0
+    throttle.record_reconnect(WINDOW + 1)
+
+    throttle.set_floor(1.0, now=WINDOW + 2)
+    assert throttle.interval == 1.0
+    assert throttle.reason is Reason.CONFIGURED
+    # Trouble from before the change doesn't count against the new speed.
+    assert throttle.evaluate(WINDOW * 2 + 2) is False
+    assert throttle.interval == 1.0

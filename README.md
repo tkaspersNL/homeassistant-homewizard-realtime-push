@@ -84,7 +84,9 @@ If this integration is useful to you, a coffee is a welcome thank you!
 
 ## Update speed options
 
-Change this under *Settings → Devices & services → HomeWizard Realtime Push → Configure*. The integration reloads automatically.
+Change this under *Settings → Devices & services → HomeWizard Realtime Push → Configure*. The new speed applies right away, without a reload, so the entities stay available.
+
+Once a few readings have come in over the WebSocket, the dialog also shows how often your meter sends one. No speed can be faster than that: with a meter that sends a reading every 10s, every option gives an update every 10s.
 
 | Option | Interval | Notes |
 |---|---|---|
@@ -258,7 +260,7 @@ actions:
               message: Grid data from the P1 meter is back.
 ```
 
-The triggers are broad on purpose. While the integration reloads, for example when the meter gets a new IP address, Status is briefly *unavailable* instead of *Problem*. `not_to: "off"` counts that as part of the outage, and `to: "off"` without `from` resumes after it. The trade-off: the resume step also runs when nothing was paused, for example after you change the update speed. It then turns the controller on even if you had switched it off yourself. Add a condition if that matters to you.
+The triggers are broad on purpose. While the integration reloads, for example when the meter gets a new IP address, Status is briefly *unavailable* instead of *Problem*. `not_to: "off"` counts that as part of the outage, and `to: "off"` without `from` resumes after it. The trade-off: the resume step also runs when nothing was paused, for example after you enable a phase entity. It then turns the controller on even if you had switched it off yourself. Add a condition if that matters to you.
 
 A Home Assistant restart doesn't count as a problem either: while Home Assistant shuts down, the entities keep their last state instead of reporting a gap. Polling and throttling don't set Status to *Problem*: the data is still fresh then, and pausing for that would do more harm than good.
 
@@ -271,7 +273,7 @@ A Home Assistant restart doesn't count as a problem either: while Home Assistant
 - **Setup says no button press was detected.** Select **Try again** on that screen, then press the button on the HomeWizard P1 meter once, briefly, within 90 seconds.
 - **Setup says the firmware is too old.** The meter only speaks API v1. Update it through the HomeWizard app, or keep using the official integration.
 
-**Diagnostics:** *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Download diagnostics*. Besides the settings and the latest measurement, it shows the live event loop lag, the time between telegrams, and how old the published values are since they arrived (on average and at most, since the last restart). The telegram delay compares the arrival time with the meter's clock, so it includes any offset of that clock. The token, serial number and IP address are redacted.
+**Diagnostics:** *Settings → Devices & services → HomeWizard Realtime Push → ⋮ → Download diagnostics*. Besides the settings and the latest measurement, it shows the live event loop lag, the time between telegrams, and how old the published values are since they arrived (on average and at most, since the last restart or speed change). The telegram delay compares the arrival time with the meter's clock, so it includes any offset of that clock. The token, serial number and IP address are redacted.
 
 **Debug logs:**
 

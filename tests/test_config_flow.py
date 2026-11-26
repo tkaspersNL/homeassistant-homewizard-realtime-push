@@ -512,14 +512,17 @@ async def test_options_flow(
     assert mock_config_entry.options == {CONF_UPDATE_SPEED: "realtime"}
 
 
-@pytest.mark.parametrize("language", ["en", "nl", "de"])
-def test_texts_name_their_own_button(language: str) -> None:
-    translations = Path(__file__).parents[1] / (
+def translations(language: str) -> dict[str, Any]:
+    folder = Path(__file__).parents[1] / (
         "custom_components/homewizard_realtime_push/translations"
     )
-    steps = json.loads((translations / f"{language}.json").read_text("utf-8"))[
-        "config"
-    ]["step"]
+    texts: dict[str, Any] = json.loads((folder / f"{language}.json").read_text("utf-8"))
+    return texts
+
+
+@pytest.mark.parametrize("language", ["en", "nl", "de"])
+def test_texts_name_their_own_button(language: str) -> None:
+    steps = translations(language)["config"]["step"]
     # HA's default button label differs per version, so a text that names a
     # button must give that button its own label.
     for step in steps.values():
@@ -527,3 +530,16 @@ def test_texts_name_their_own_button(language: str) -> None:
         assert named == ([step["submit"]] if "submit" in step else [])
     assert "submit" in steps["authorize_retry"]
     assert "submit" in steps["reauth_confirm"]
+
+
+@pytest.mark.parametrize("language", ["en", "nl", "de"])
+def test_speed_dialog_texts_match_with_and_without_the_meter_interval(
+    language: str,
+) -> None:
+    steps = translations(language)["options"]["step"]
+    plain, measured = steps["init"], steps["init_measured"]
+    assert plain.keys() == measured.keys()
+    for key in plain.keys() - {"data_description"}:
+        assert measured[key] == plain[key]
+    assert "{seconds}" in measured["data_description"]["update_speed"]
+    assert "{seconds}" not in plain["data_description"]["update_speed"]
