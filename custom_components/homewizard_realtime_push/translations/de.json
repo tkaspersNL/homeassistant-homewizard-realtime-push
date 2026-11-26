@@ -72,6 +72,16 @@
         "data_description": {
           "update_speed": "Echtzeit folgt deinem Zähler: etwa 1s bei einem DSMR-5-Zähler, 10s bei älteren Zählern. Wie viel Speicher jede Geschwindigkeit braucht, steht in der README."
         }
+      },
+      "init_measured": {
+        "title": "Aktualisierungsrate",
+        "description": "Wie oft die Leistung aktualisiert wird. Schneller liefert einen frischeren Messwert, kostet aber mehr CPU und Datenbankspeicher. Kommt Home Assistant nicht hinterher oder stockt die Verbindung, wird die Aktualisierung vorübergehend schrittweise langsamer (bis höchstens 5s) und erholt sich automatisch. Änderungen gelten sofort; ein Neustart ist nicht nötig.",
+        "data": {
+          "update_speed": "Aktualisierungsrate"
+        },
+        "data_description": {
+          "update_speed": "Dein Zähler sendet etwa alle {seconds}s einen Messwert. Echtzeit folgt deinem Zähler, und keine Geschwindigkeit kann schneller sein als er. Wie viel Speicher jede Geschwindigkeit braucht, steht in der README."
+        }
       }
     }
   },

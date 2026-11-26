@@ -72,6 +72,16 @@
         "data_description": {
           "update_speed": "Realtime volgt je meter: ongeveer 1s bij een DSMR 5-meter, 10s bij oudere meters. Zie de README voor hoeveel opslag elke snelheid gebruikt."
         }
+      },
+      "init_measured": {
+        "title": "Updatesnelheid",
+        "description": "Hoe vaak het vermogen wordt bijgewerkt. Sneller geeft een versere meting, maar kost meer CPU en databaseopslag. Houdt Home Assistant het niet bij of hapert de verbinding, dan gaat de snelheid tijdelijk stapsgewijs omlaag (tot hooguit 5s) en herstelt die zich automatisch. Wijzigingen gaan direct in; herstarten is niet nodig.",
+        "data": {
+          "update_speed": "Updatesnelheid"
+        },
+        "data_description": {
+          "update_speed": "Je meter stuurt ongeveer elke {seconds}s een meting. Realtime volgt je meter, en geen enkele snelheid kan sneller zijn dan je meter. Zie de README voor hoeveel opslag elke snelheid gebruikt."
+        }
       }
     }
   },
